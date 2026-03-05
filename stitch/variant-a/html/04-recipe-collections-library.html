@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Recipe Collections Library</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ff7b00",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .ios-blur {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="relative flex h-screen w-full flex-col overflow-hidden max-w-[430px] mx-auto border-x border-slate-200 dark:border-slate-800 shadow-2xl">
+<!-- Header -->
+<header class="sticky top-0 z-20 bg-background-light/80 dark:bg-background-dark/80 ios-blur px-4 pt-12 pb-4">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<div class="bg-primary p-1.5 rounded-lg text-white">
+<span class="material-symbols-outlined text-2xl leading-none">restaurant_menu</span>
+</div>
+<h1 class="text-2xl font-bold tracking-tight">ChefVault</h1>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-slate-200/50 dark:bg-slate-800/50">
+<span class="material-symbols-outlined text-slate-700 dark:text-slate-300">account_circle</span>
+</button>
+</div>
+<div class="flex items-center justify-between">
+<h2 class="text-xl font-semibold">Collections</h2>
+<button class="flex items-center gap-1 text-primary font-semibold">
+<span class="material-symbols-outlined">add_circle</span>
+<span>New</span>
+</button>
+</div>
+<!-- Search Bar -->
+<div class="mt-4">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-slate-400">search</span>
+<input class="w-full bg-slate-200/50 dark:bg-slate-800/50 border-none rounded-xl py-2.5 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/50 placeholder:text-slate-500" placeholder="Search collections..." type="text"/>
+</div>
+</div>
+</header>
+<!-- Main Content (Scrollable) -->
+<main class="flex-1 overflow-y-auto px-4 pb-24">
+<div class="grid grid-cols-2 gap-4 py-4">
+<!-- Dinner Service -->
+<div class="group relative flex flex-col bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="h-32 w-full bg-cover bg-center relative" data-alt="Gourmet dinner plates in a dimly lit restaurant" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAz5KQEoLhBL3cwGrX-yZ2RWzFcj44RFz8HypV3MuFbO9ENyx8qX4ht3-qgckC4V-csWFu-zqlvcTn0uvk5qXFVEvEjAqtn3VC5RrJCZDkimWW2iyOMF65mcjw-0FZbWh9JSAGt_5oQc_t6dGiaQer10JaojJQs3jkdRSDUVPSxUNO1kNluRYqb3q1FDq6EV60cdPT0wXYI7SJtZbTAGBk7oHoe_-ab82nJYevZNK0gP-axP3f4XFm5KWn2DZXlT3gxeoO6I_YUWg')">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+<div class="absolute top-2 right-2 bg-black/40 backdrop-blur-md rounded-lg px-2 py-1">
+<span class="text-[10px] font-bold text-white uppercase tracking-wider">Active</span>
+</div>
+</div>
+<div class="p-3">
+<h3 class="font-bold text-sm truncate">Dinner Service</h3>
+<p class="text-xs text-slate-500 mt-0.5">48 recipes</p>
+</div>
+</div>
+<!-- Desserts -->
+<div class="group relative flex flex-col bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="h-32 w-full bg-cover bg-center relative" data-alt="Elegant chocolate dessert with gold leaf" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDQ5Yktlvo3LGg00BaKRTNpNsOADZS-cqRuw-O6vRtNQ7AxGYACV5yOJntNhDlgHJQYZSZoqFflg_EDzWxR6k43FvFyEoGT4rxZqxd0nsS-ab7lWiQv-IEKPPqL63yRDYPBoYctGS7xqI-El5epTByKqw9afHBxM5DfXv_wULpDJ6Mr08Kd3tcQDBviVcAhNPfm8bzWuM93HKztNeExn0l0oywZ8QeRncpmlZL_Fn7rvSMYj3WjZ88b2bd0p86btsPdY7Qs2-PzBQ')">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+</div>
+<div class="p-3">
+<h3 class="font-bold text-sm truncate">Desserts</h3>
+<p class="text-xs text-slate-500 mt-0.5">24 recipes</p>
+</div>
+</div>
+<!-- R&D -->
+<div class="group relative flex flex-col bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="h-32 w-full bg-cover bg-center relative" data-alt="Chef experimenting with molecular gastronomy tools" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDU-z7ONQPVVPHzI34fbFgyeFh8QeyrC6rugt7hH9PgCZzOvxDd4viR0dLhl3VEMp4qQdSmfDqmm4HZQxWAOT1IvMT3hrxvmxROT8yAqg5_Jcbb96WclckRZuvT1tbbehJY8hc1umBxuNnL_WnEkeFr64AGUvgGx5QpUqXrrnM4V1InxBmfcYxmL5mpIT7QeD_ww5pNUAyOG5WjVUdPB3PjbQqh1A6PvYZ0iWuk5yB9MpVWr0-P3DNG1r4N1TXpPmOM4wkmn9H96A')">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+<div class="absolute top-2 right-2 bg-primary rounded-lg px-2 py-1 shadow-lg">
+<span class="text-[10px] font-bold text-white uppercase tracking-wider">Draft</span>
+</div>
+</div>
+<div class="p-3">
+<h3 class="font-bold text-sm truncate">R&amp;D</h3>
+<p class="text-xs text-slate-500 mt-0.5">12 recipes</p>
+</div>
+</div>
+<!-- Staff Meal -->
+<div class="group relative flex flex-col bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="h-32 w-full bg-cover bg-center relative" data-alt="Large family style spread of food" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBn2sW2V7Sua_9e42YxCzUYOXWW9C20nC7VDBMxotbQYwVbUCOngkIG4S5zu7GXaJM1iyWaUKHDFUDTyJ8sAI3zJsUS09R0VSI16gaM8Vg5rc5OfGtyv9W_JAvZy3Gysg29up6-nf2v8iHvIKEdLRgSOM68z9bSsq6EsqBhy-wP8rCJVm-7dotvmvgtSUeOywQ7QDfRLdiKI1QyP3xy5s1w_f7LD9Jy77ePOLtjGyTvvwGg8bwRJcOP1tp9oXXmgWfqIf10O-2f4w')">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+</div>
+<div class="p-3">
+<h3 class="font-bold text-sm truncate">Staff Meal</h3>
+<p class="text-xs text-slate-500 mt-0.5">85 recipes</p>
+</div>
+</div>
+<!-- Sauces -->
+<div class="group relative flex flex-col bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="h-32 w-full bg-cover bg-center relative" data-alt="Vibrant colorful sauces in small bowls" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBu-Oy-aWMFOQTo7aNxJ-b8oFhsX1lH__eBKfoAQD8m0pf2gziQV61agNAajL0dIagIZObsB0_0O9H9nyi5ClME-VHnTisaLUvrLd3HSo2Eg-1HMY9EKpy2CkVembw4QjbVp6EDFbfwNg0bLQpwhXobO4C0uuGKcDZj9z9NblaNaEfgV0rx2XOYNWHdaeWnVS5yT8kRBmWXnGdWYKpkW0v5RWtWlL2qHSasUclNRjfxRJYqVJ75UmfQnOYhoEvsrEjO9ntF04GA6A')">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+</div>
+<div class="p-3">
+<h3 class="font-bold text-sm truncate">Sauces</h3>
+<p class="text-xs text-slate-500 mt-0.5">31 recipes</p>
+</div>
+</div>
+<!-- New Folder Placeholder -->
+<button class="flex flex-col items-center justify-center h-44 bg-slate-200/30 dark:bg-slate-800/30 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:bg-slate-200/50 transition-colors">
+<span class="material-symbols-outlined text-slate-400 text-3xl mb-1">create_new_folder</span>
+<span class="text-xs font-medium text-slate-500">Create Folder</span>
+</button>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="absolute bottom-0 left-0 right-0 bg-background-light/90 dark:bg-background-dark/90 ios-blur border-t border-slate-200 dark:border-slate-800 px-6 pb-8 pt-3">
+<div class="flex items-center justify-between">
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="text-[10px] font-medium uppercase tracking-tighter">Recipes</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">folder</span>
+<span class="text-[10px] font-medium uppercase tracking-tighter">Collections</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="text-[10px] font-medium uppercase tracking-tighter">Inventory</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-medium uppercase tracking-tighter">Settings</span>
+</a>
+</div>
+</nav>
+<!-- FAB for Quick Add -->
+<button class="absolute bottom-24 right-4 bg-primary text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-transform z-30">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</div>
+</body></html>

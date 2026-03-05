@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ChefVault - Automated Prep Checklist (Dark Mode)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ff7b00",
+                        "background-dark": "#0a0a0a",
+                        "surface-dark": "#161616",
+                        "border-dark": "#2a2a2a",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        :root {
+            --checkbox-tick-svg: url('data:image/svg+xml,%3csvg viewBox=%270 0 16 16%27 fill=%27white%27 xmlns=%27http://www.w3.org/2000/svg%27%3e%3cpath d=%27M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z%27/%3e%3c/svg%3e');
+        }.prep-item {
+            @apply transition-opacity duration-200;
+        }.checklist-input:checked + .item-content {
+            @apply opacity-30;
+        }.pending-text {
+            @apply text-[#f5f5f5];
+        }
+    </style>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-display bg-background-dark text-slate-100 antialiased dark">
+<div class="relative flex h-screen max-w-[430px] mx-auto flex-col overflow-hidden bg-background-dark shadow-2xl border-x border-border-dark">
+<header class="sticky top-0 z-10 bg-background-dark/95 backdrop-blur-md border-b border-border-dark">
+<div class="flex items-center p-4 justify-between">
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined text-white">arrow_back</span>
+</button>
+<div>
+<h2 class="text-lg font-bold leading-tight tracking-tight text-white">Friday Service</h2>
+<p class="text-xs font-medium text-slate-400">Oct 27 • 14 Items Total</p>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined text-white">search</span>
+</button>
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined text-white">more_vert</span>
+</button>
+</div>
+</div>
+<div class="px-4 pb-0 overflow-x-auto no-scrollbar">
+<div class="flex gap-6 min-w-max">
+<a class="flex flex-col items-center justify-center border-b-2 border-primary text-white pb-3 pt-2" href="#">
+<p class="text-sm font-bold">All Items</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-2 border-transparent text-slate-500 pb-3 pt-2" href="#">
+<p class="text-sm font-bold">In Progress</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-2 border-transparent text-slate-500 pb-3 pt-2" href="#">
+<p class="text-sm font-bold">Completed</p>
+</a>
+</div>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto p-4 space-y-6">
+<section>
+<div class="flex items-center justify-between mb-3 px-1">
+<h3 class="text-xs font-black uppercase tracking-[0.1em] text-slate-400">Protein &amp; Seafood</h3>
+<span class="text-[10px] font-black px-2 py-0.5 rounded bg-primary/20 text-primary ring-1 ring-primary/30">GRILL</span>
+</div>
+<div class="bg-surface-dark rounded-xl border border-border-dark divide-y divide-border-dark overflow-hidden">
+<label class="flex items-center gap-4 p-4 cursor-pointer active:bg-white/5 prep-item">
+<input class="checklist-input h-7 w-7 rounded border-slate-600 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 appearance-none border-2 relative checked:after:content-[''] checked:after:absolute checked:after:inset-0 checked:after:bg-[image:--checkbox-tick-svg] checked:after:bg-no-repeat checked:after:bg-center" type="checkbox"/>
+<div class="flex-1 item-content">
+<div class="flex justify-between items-start">
+<p class="text-[17px] font-bold pending-text leading-tight">Salmon Fillet</p>
+<p class="text-[17px] font-black text-primary">3.4 kg</p>
+</div>
+<p class="text-sm text-slate-400 mt-0.5">Skin-off, 180g portions</p>
+</div>
+</label>
+<label class="flex items-center gap-4 p-4 cursor-pointer active:bg-white/5 prep-item">
+<input class="checklist-input h-7 w-7 rounded border-slate-600 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 appearance-none border-2 relative checked:after:content-[''] checked:after:absolute checked:after:inset-0 checked:after:bg-[image:--checkbox-tick-svg] checked:after:bg-no-repeat checked:after:bg-center" type="checkbox"/>
+<div class="flex-1 item-content">
+<div class="flex justify-between items-start">
+<p class="text-[17px] font-bold pending-text leading-tight">Beef Tenderloin</p>
+<p class="text-[17px] font-black text-primary">5.2 kg</p>
+</div>
+<p class="text-sm text-slate-400 mt-0.5">Trimming &amp; Trussing</p>
+</div>
+</label>
+</div>
+</section>
+<section>
+<div class="flex items-center justify-between mb-3 px-1">
+<h3 class="text-xs font-black uppercase tracking-[0.1em] text-slate-400">Produce &amp; Aromatics</h3>
+<span class="text-[10px] font-black px-2 py-0.5 rounded bg-primary/20 text-primary ring-1 ring-primary/30">SAUCIER</span>
+</div>
+<div class="bg-surface-dark rounded-xl border border-border-dark divide-y divide-border-dark overflow-hidden">
+<label class="flex items-center gap-4 p-4 cursor-pointer active:bg-white/5 prep-item">
+<input class="checklist-input h-7 w-7 rounded border-slate-600 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 appearance-none border-2 relative checked:after:content-[''] checked:after:absolute checked:after:inset-0 checked:after:bg-[image:--checkbox-tick-svg] checked:after:bg-no-repeat checked:after:bg-center" type="checkbox"/>
+<div class="flex-1 item-content">
+<div class="flex justify-between items-start">
+<p class="text-[17px] font-bold pending-text leading-tight">Garlic Cloves</p>
+<p class="text-[17px] font-black text-primary">220 g</p>
+</div>
+<p class="text-sm text-slate-400 mt-0.5">Micro-planed</p>
+</div>
+</label>
+<label class="flex items-center gap-4 p-4 cursor-pointer active:bg-white/5 prep-item">
+<input checked="" class="checklist-input h-7 w-7 rounded border-slate-600 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 appearance-none border-2 relative checked:after:content-[''] checked:after:absolute checked:after:inset-0 checked:after:bg-[image:--checkbox-tick-svg] checked:after:bg-no-repeat checked:after:bg-center" type="checkbox"/>
+<div class="flex-1 item-content">
+<div class="flex justify-between items-start">
+<p class="text-[17px] font-bold pending-text leading-tight">Shallots</p>
+<p class="text-[17px] font-black text-primary">500 g</p>
+</div>
+<p class="text-sm text-slate-400 mt-0.5">Brunoise</p>
+</div>
+</label>
+<label class="flex items-center gap-4 p-4 cursor-pointer active:bg-white/5 prep-item">
+<input class="checklist-input h-7 w-7 rounded border-slate-600 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 appearance-none border-2 relative checked:after:content-[''] checked:after:absolute checked:after:inset-0 checked:after:bg-[image:--checkbox-tick-svg] checked:after:bg-no-repeat checked:after:bg-center" type="checkbox"/>
+<div class="flex-1 item-content">
+<div class="flex justify-between items-start">
+<p class="text-[17px] font-bold pending-text leading-tight">Fresh Thyme</p>
+<p class="text-[17px] font-black text-primary">50 g</p>
+</div>
+<p class="text-sm text-slate-400 mt-0.5">Picked leaves only</p>
+</div>
+</label>
+</div>
+</section>
+<section>
+<div class="flex items-center justify-between mb-3 px-1">
+<h3 class="text-xs font-black uppercase tracking-[0.1em] text-slate-400">Dairy &amp; Fats</h3>
+<span class="text-[10px] font-black px-2 py-0.5 rounded bg-primary/20 text-primary ring-1 ring-primary/30">ALL</span>
+</div>
+<div class="bg-surface-dark rounded-xl border border-border-dark divide-y divide-border-dark overflow-hidden">
+<label class="flex items-center gap-4 p-4 cursor-pointer active:bg-white/5 prep-item">
+<input class="checklist-input h-7 w-7 rounded border-slate-600 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 appearance-none border-2 relative checked:after:content-[''] checked:after:absolute checked:after:inset-0 checked:after:bg-[image:--checkbox-tick-svg] checked:after:bg-no-repeat checked:after:bg-center" type="checkbox"/>
+<div class="flex-1 item-content">
+<div class="flex justify-between items-start">
+<p class="text-[17px] font-bold pending-text leading-tight">Heavy Cream</p>
+<p class="text-[17px] font-black text-primary">4 L</p>
+</div>
+<p class="text-sm text-slate-400 mt-0.5">36% Fat content</p>
+</div>
+</label>
+<label class="flex items-center gap-4 p-4 cursor-pointer active:bg-white/5 prep-item">
+<input class="checklist-input h-7 w-7 rounded border-slate-600 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 appearance-none border-2 relative checked:after:content-[''] checked:after:absolute checked:after:inset-0 checked:after:bg-[image:--checkbox-tick-svg] checked:after:bg-no-repeat checked:after:bg-center" type="checkbox"/>
+<div class="flex-1 item-content">
+<div class="flex justify-between items-start">
+<p class="text-[17px] font-bold pending-text leading-tight">Unsalted Butter</p>
+<p class="text-[17px] font-black text-primary">2.5 kg</p>
+</div>
+<p class="text-sm text-slate-400 mt-0.5">Cubed for emulsifying</p>
+</div>
+</label>
+</div>
+</section>
+<div class="h-16"></div> 
+</main>
+<footer class="bg-background-dark border-t border-border-dark px-4 pb-8 pt-3">
+<div class="flex gap-2">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Recipes</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">assignment</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Prep Lists</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Inventory</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Settings</p>
+</a>
+</div>
+</footer>
+<button class="absolute bottom-24 right-6 size-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center active:scale-90 transition-transform z-20">
+<span class="material-symbols-outlined text-3xl font-bold">add</span>
+</button>
+</div>
+
+</body></html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ChefVault - Recipe Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ff7b00",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<header class="sticky top-0 z-10 flex items-center bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm p-4 border-b border-primary/10 justify-between">
+<div class="flex items-center gap-2">
+<button class="text-slate-900 dark:text-slate-100 p-1">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h2 class="text-lg font-bold leading-tight tracking-tight">Recipe Detail</h2>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center justify-center rounded-lg text-slate-900 dark:text-slate-100">
+<span class="material-symbols-outlined">edit</span>
+</button>
+<button class="flex items-center justify-center rounded-lg text-slate-900 dark:text-slate-100">
+<span class="material-symbols-outlined">share</span>
+</button>
+</div>
+</header>
+<main class="flex-1 pb-24">
+<div class="px-4 py-6 border-b border-primary/10">
+<div class="flex justify-between items-start mb-2">
+<h1 class="text-3xl font-bold leading-tight flex-1">Pan-Seared Salmon with Asparagus</h1>
+<span class="bg-primary/10 text-primary text-[10px] uppercase font-bold px-2 py-1 rounded tracking-wider">Active</span>
+</div>
+<div class="grid grid-cols-3 gap-4 mt-6">
+<div class="flex flex-col">
+<span class="text-[10px] uppercase font-bold text-slate-500 tracking-widest mb-1">Cuisine</span>
+<span class="text-sm font-semibold">French</span>
+</div>
+<div class="flex flex-col border-l border-primary/10 pl-4">
+<span class="text-[10px] uppercase font-bold text-slate-500 tracking-widest mb-1">Prep Time</span>
+<span class="text-sm font-semibold">15 mins</span>
+</div>
+<div class="flex flex-col border-l border-primary/10 pl-4">
+<span class="text-[10px] uppercase font-bold text-slate-500 tracking-widest mb-1">Cook Time</span>
+<span class="text-sm font-semibold">20 mins</span>
+</div>
+</div>
+</div>
+<div class="bg-primary/5 dark:bg-primary/10 p-4 border-b border-primary/10">
+<div class="flex items-center justify-between">
+<div>
+<h3 class="text-sm font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Scaling &amp; Yield</h3>
+<p class="text-xs text-slate-500 mt-0.5">Adjusting weights automatically</p>
+</div>
+<div class="flex items-center bg-white dark:bg-slate-800 rounded-lg border border-primary/20 p-1">
+<button class="size-8 flex items-center justify-center text-primary hover:bg-primary/10 rounded">
+<span class="material-symbols-outlined text-xl">remove</span>
+</button>
+<div class="px-4 flex flex-col items-center min-w-[60px]">
+<span class="text-lg font-bold leading-none">4</span>
+<span class="text-[9px] uppercase font-bold text-slate-400">Servings</span>
+</div>
+<button class="size-8 flex items-center justify-center text-primary hover:bg-primary/10 rounded">
+<span class="material-symbols-outlined text-xl">add</span>
+</button>
+</div>
+</div>
+</div>
+<section class="mt-6">
+<div class="px-4 mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">restaurant</span>
+<h3 class="text-sm font-bold uppercase tracking-widest">Ingredients</h3>
+</div>
+<div class="overflow-hidden border-y border-primary/10">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-100 dark:bg-slate-900/50 text-[10px] uppercase tracking-widest text-slate-500">
+<th class="py-2 px-4 font-bold border-b border-primary/10">Qty</th>
+<th class="py-2 px-2 font-bold border-b border-primary/10">Unit</th>
+<th class="py-2 px-4 font-bold border-b border-primary/10">Ingredient</th>
+</tr>
+</thead>
+<tbody class="text-sm">
+<tr class="border-b border-primary/5">
+<td class="py-3 px-4 font-mono font-medium text-primary">800</td>
+<td class="py-3 px-2 text-slate-500">g</td>
+<td class="py-3 px-4 font-medium">Salmon Fillets (skin-on)</td>
+</tr>
+<tr class="border-b border-primary/5">
+<td class="py-3 px-4 font-mono font-medium text-primary">500</td>
+<td class="py-3 px-2 text-slate-500">g</td>
+<td class="py-3 px-4 font-medium">Asparagus Spears (trimmed)</td>
+</tr>
+<tr class="border-b border-primary/5">
+<td class="py-3 px-4 font-mono font-medium text-primary">60</td>
+<td class="py-3 px-2 text-slate-500">ml</td>
+<td class="py-3 px-4 font-medium">Extra Virgin Olive Oil</td>
+</tr>
+<tr class="border-b border-primary/5">
+<td class="py-3 px-4 font-mono font-medium text-primary">40</td>
+<td class="py-3 px-2 text-slate-500">g</td>
+<td class="py-3 px-4 font-medium">Unsalted Butter</td>
+</tr>
+<tr class="border-b border-primary/5">
+<td class="py-3 px-4 font-mono font-medium text-primary">2</td>
+<td class="py-3 px-2 text-slate-500">pc</td>
+<td class="py-3 px-4 font-medium">Lemons (zested &amp; juiced)</td>
+</tr>
+<tr class="border-b border-primary/5">
+<td class="py-3 px-4 font-mono font-medium text-primary">10</td>
+<td class="py-3 px-2 text-slate-500">g</td>
+<td class="py-3 px-4 font-medium">Sea Salt (Maldon)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section class="mt-8 px-4">
+<div class="mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">assignment</span>
+<h3 class="text-sm font-bold uppercase tracking-widest">Method</h3>
+</div>
+<div class="space-y-6">
+<div class="flex gap-4">
+<span class="flex-none size-6 rounded bg-primary text-white text-xs font-bold flex items-center justify-center">1</span>
+<p class="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                            Pat the salmon fillets dry with paper towels. Season the skin side heavily with sea salt. Allow to temper at room temperature for 10 minutes before cooking.
+                        </p>
+</div>
+<div class="flex gap-4">
+<span class="flex-none size-6 rounded bg-primary text-white text-xs font-bold flex items-center justify-center">2</span>
+<p class="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                            Heat olive oil in a large stainless steel pan over medium-high heat until shimmering. Place salmon skin-side down and press gently with a spatula for 30 seconds to ensure even contact.
+                        </p>
+</div>
+<div class="flex gap-4">
+<span class="flex-none size-6 rounded bg-primary text-white text-xs font-bold flex items-center justify-center">3</span>
+<p class="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                            Reduce heat to medium. Cook for 6-7 minutes until skin is crispy and the flesh is cooked 75% through. Add butter and lemon juice to the pan.
+                        </p>
+</div>
+<div class="flex gap-4">
+<span class="flex-none size-6 rounded bg-primary text-white text-xs font-bold flex items-center justify-center">4</span>
+<p class="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                            Toss asparagus in the butter-lemon emulsion in the same pan. Flip salmon briefly (30 seconds) and remove from heat. Rest for 2 minutes before serving.
+                        </p>
+</div>
+</div>
+</section>
+</main>
+<nav class="fixed bottom-0 left-0 right-0 border-t border-primary/10 bg-background-light dark:bg-background-dark px-4 pb-6 pt-2 flex justify-between items-center z-20">
+<a class="flex flex-1 flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<p class="text-[10px] font-bold uppercase tracking-tight">Recipes</p>
+</a>
+<a class="flex flex-1 flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<p class="text-[10px] font-bold uppercase tracking-tight">Inventory</p>
+</a>
+<a class="flex flex-1 flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">group</span>
+<p class="text-[10px] font-bold uppercase tracking-tight">Team</p>
+</a>
+<a class="flex flex-1 flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">settings</span>
+<p class="text-[10px] font-bold uppercase tracking-tight">Settings</p>
+</a>
+</nav>
+</div>
+</body></html>

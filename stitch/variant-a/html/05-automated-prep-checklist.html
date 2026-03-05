@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ChefVault - Automated Prep Checklist</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ff7b00",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        :root {
+            --checkbox-tick-svg: url('data:image/svg+xml,%3csvg viewBox=%270 0 16 16%27 fill=%27white%27 xmlns=%27http://www.w3.org/2000/svg%27%3e%3cpath d=%27M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z%27/%3e%3c/svg%3e');
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex h-screen max-w-[430px] mx-auto flex-col overflow-hidden bg-background-light dark:bg-background-dark shadow-2xl border-x border-slate-200 dark:border-slate-800">
+<header class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+<div class="flex items-center p-4 justify-between">
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-100">arrow_back</span>
+</button>
+<div>
+<h2 class="text-lg font-bold leading-tight tracking-tight">Friday Service</h2>
+<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Oct 27 • 14 Items Total</p>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-100">search</span>
+</button>
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-100">more_vert</span>
+</button>
+</div>
+</div>
+<div class="px-4 pb-0 overflow-x-auto no-scrollbar">
+<div class="flex gap-6 min-w-max">
+<a class="flex flex-col items-center justify-center border-b-2 border-primary text-slate-900 dark:text-slate-100 pb-3 pt-2" href="#">
+<p class="text-sm font-bold">All Items</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-2 border-transparent text-slate-500 dark:text-slate-400 pb-3 pt-2" href="#">
+<p class="text-sm font-bold">In Progress</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-2 border-transparent text-slate-500 dark:text-slate-400 pb-3 pt-2" href="#">
+<p class="text-sm font-bold">Completed</p>
+</a>
+</div>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto p-4 space-y-6">
+<section>
+<div class="flex items-center justify-between mb-2">
+<h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Protein &amp; Seafood</h3>
+<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-primary/10 text-primary">STATION: GRILL</span>
+</div>
+<div class="bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800">
+<label class="flex items-center gap-4 p-4 cursor-pointer active:bg-slate-50 dark:active:bg-slate-800 transition-colors">
+<input class="h-6 w-6 rounded border-slate-300 dark:border-slate-700 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 appearance-none border-2 relative checked:after:content-[''] checked:after:absolute checked:after:inset-0 checked:after:bg-[image:--checkbox-tick-svg] checked:after:bg-no-repeat checked:after:bg-center" type="checkbox"/>
+<div class="flex-1">
+<div class="flex justify-between items-center">
+<p class="text-base font-semibold">Salmon Fillet</p>
+<p class="text-base font-bold text-primary">3.4 kg</p>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400">Skin-off, 180g portions</p>
+</div>
+</label>
+<label class="flex items-center gap-4 p-4 cursor-pointer active:bg-slate-50 dark:active:bg-slate-800 transition-colors">
+<input class="h-6 w-6 rounded border-slate-300 dark:border-slate-700 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 appearance-none border-2 relative checked:after:content-[''] checked:after:absolute checked:after:inset-0 checked:after:bg-[image:--checkbox-tick-svg] checked:after:bg-no-repeat checked:after:bg-center" type="checkbox"/>
+<div class="flex-1">
+<div class="flex justify-between items-center">
+<p class="text-base font-semibold">Beef Tenderloin</p>
+<p class="text-base font-bold text-primary">5.2 kg</p>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400">Trimming &amp; Trussing</p>
+</div>
+</label>
+</div>
+</section>
+<section>
+<div class="flex items-center justify-between mb-2">
+<h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Produce &amp; Aromatics</h3>
+<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-primary/10 text-primary">STATION: SAUCIER</span>
+</div>
+<div class="bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800">
+<label class="flex items-center gap-4 p-4 cursor-pointer">
+<input class="h-6 w-6 rounded border-slate-300 dark:border-slate-700 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 appearance-none border-2 relative checked:after:content-[''] checked:after:absolute checked:after:inset-0 checked:after:bg-[image:--checkbox-tick-svg] checked:after:bg-no-repeat checked:after:bg-center" type="checkbox"/>
+<div class="flex-1">
+<div class="flex justify-between items-center">
+<p class="text-base font-semibold">Garlic Cloves</p>
+<p class="text-base font-bold text-primary">220 g</p>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400">Micro-planed</p>
+</div>
+</label>
+<label class="flex items-center gap-4 p-4 cursor-pointer">
+<input class="h-6 w-6 rounded border-slate-300 dark:border-slate-700 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 appearance-none border-2 relative checked:after:content-[''] checked:after:absolute checked:after:inset-0 checked:after:bg-[image:--checkbox-tick-svg] checked:after:bg-no-repeat checked:after:bg-center" type="checkbox"/>
+<div class="flex-1">
+<div class="flex justify-between items-center">
+<p class="text-base font-semibold">Shallots</p>
+<p class="text-base font-bold text-primary">500 g</p>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400">Brunoise</p>
+</div>
+</label>
+<label class="flex items-center gap-4 p-4 cursor-pointer">
+<input class="h-6 w-6 rounded border-slate-300 dark:border-slate-700 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 appearance-none border-2 relative checked:after:content-[''] checked:after:absolute checked:after:inset-0 checked:after:bg-[image:--checkbox-tick-svg] checked:after:bg-no-repeat checked:after:bg-center" type="checkbox"/>
+<div class="flex-1">
+<div class="flex justify-between items-center">
+<p class="text-base font-semibold">Fresh Thyme</p>
+<p class="text-base font-bold text-primary">50 g</p>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400">Picked leaves only</p>
+</div>
+</label>
+</div>
+</section>
+<section>
+<div class="flex items-center justify-between mb-2">
+<h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Dairy &amp; Fats</h3>
+<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-primary/10 text-primary">STATION: ALL</span>
+</div>
+<div class="bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800">
+<label class="flex items-center gap-4 p-4 cursor-pointer">
+<input class="h-6 w-6 rounded border-slate-300 dark:border-slate-700 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 appearance-none border-2 relative checked:after:content-[''] checked:after:absolute checked:after:inset-0 checked:after:bg-[image:--checkbox-tick-svg] checked:after:bg-no-repeat checked:after:bg-center" type="checkbox"/>
+<div class="flex-1">
+<div class="flex justify-between items-center">
+<p class="text-base font-semibold">Heavy Cream</p>
+<p class="text-base font-bold text-primary">4 L</p>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400">36% Fat content</p>
+</div>
+</label>
+<label class="flex items-center gap-4 p-4 cursor-pointer">
+<input class="h-6 w-6 rounded border-slate-300 dark:border-slate-700 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 appearance-none border-2 relative checked:after:content-[''] checked:after:absolute checked:after:inset-0 checked:after:bg-[image:--checkbox-tick-svg] checked:after:bg-no-repeat checked:after:bg-center" type="checkbox"/>
+<div class="flex-1">
+<div class="flex justify-between items-center">
+<p class="text-base font-semibold">Unsalted Butter</p>
+<p class="text-base font-bold text-primary">2.5 kg</p>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400">Cubed for emulsifying</p>
+</div>
+</label>
+</div>
+</section>
+</main>
+<footer class="bg-background-light dark:bg-background-dark border-t border-slate-200 dark:border-slate-800 px-4 pb-6 pt-2">
+<div class="flex gap-2">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<p class="text-[10px] font-medium uppercase tracking-wider">Recipes</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">assignment</span>
+<p class="text-[10px] font-medium uppercase tracking-wider">Prep Lists</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<p class="text-[10px] font-medium uppercase tracking-wider">Inventory</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<p class="text-[10px] font-medium uppercase tracking-wider">Settings</p>
+</a>
+</div>
+</footer>
+<button class="absolute bottom-20 right-4 size-14 bg-primary text-white rounded-full shadow-lg flex items-center justify-center active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</div>
+</body></html>
