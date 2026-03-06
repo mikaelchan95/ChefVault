@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -12,6 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useTheme } from '@/src/hooks/useTheme';
 import { FontSize, Spacing, BorderRadius } from '@/src/constants/theme';
+import { useAuthStore } from '@/src/stores/authStore';
 import { useRecipeStore } from '@/src/stores/recipeStore';
 import { scaleRecipeIngredients, type ScaledIngredient } from '@/src/lib/scaling';
 import { calculateRecipeCost, formatCurrency, calculateScaledCost } from '@/src/lib/costing';
@@ -24,7 +25,9 @@ export default function RecipeDetailScreen() {
   const { colors, sharedStyles } = useTheme();
   const recipe = useRecipeStore((s) => s.getRecipeById(id!));
   const updateRecipe = useRecipeStore((s) => s.updateRecipe);
+  const profileUnits = useAuthStore((s) => s.profile?.default_units) ?? 'metric';
   const [targetServings, setTargetServings] = useState(recipe?.servings ?? 1);
+  const [unitSystem, setUnitSystem] = useState<'metric' | 'imperial'>(profileUnits);
   const minusScale = useSharedValue(1);
   const plusScale = useSharedValue(1);
 
@@ -51,6 +54,36 @@ export default function RecipeDetailScreen() {
     });
   }, []);
 
+  const handleShare = async () => {
+    if (!recipe) return;
+
+    const ingredients = (recipe.ingredients ?? [])
+      .map((i) => `  ${i.quantity} ${i.unit} ${i.name}${i.notes ? ` (${i.notes})` : ''}`)
+      .join('\n');
+
+    const steps = (recipe.steps ?? [])
+      .map((s) => `${s.step_number}. ${s.instruction}`)
+      .join('\n');
+
+    const text = [
+      recipe.title,
+      recipe.cuisine ? `Cuisine: ${recipe.cuisine}` : '',
+      `Servings: ${recipe.servings}`,
+      recipe.prep_time ? `Prep: ${recipe.prep_time} min` : '',
+      recipe.cook_time ? `Cook: ${recipe.cook_time} min` : '',
+      recipe.description ? `\n${recipe.description}` : '',
+      '\nIngredients:',
+      ingredients,
+      '\nMethod:',
+      steps,
+      '\n— Shared from ChefVault',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    await Share.share({ message: text, title: recipe.title });
+  };
+
   if (!recipe) {
     return (
       <View style={[sharedStyles.screenContainer, { alignItems: 'center', justifyContent: 'center', gap: Spacing.lg }]}>
@@ -63,8 +96,9 @@ export default function RecipeDetailScreen() {
   }
 
   const isScaled = targetServings !== recipe.servings;
+  const isConverted = unitSystem !== profileUnits;
   const scaledIngredients: ScaledIngredient[] = recipe.ingredients
-    ? scaleRecipeIngredients(recipe.ingredients, recipe.servings, targetServings)
+    ? scaleRecipeIngredients(recipe.ingredients, recipe.servings, targetServings, unitSystem)
     : [];
   const costSummary = recipe.ingredients
     ? calculateRecipeCost(recipe.ingredients, recipe.servings)
@@ -84,7 +118,7 @@ export default function RecipeDetailScreen() {
           <Pressable onPress={() => router.push(`/recipe/edit/${recipe.id}`)} hitSlop={8}>
             <MaterialIcons name="edit" size={22} color={colors.text} />
           </Pressable>
-          <Pressable hitSlop={8}>
+          <Pressable onPress={handleShare} hitSlop={8}>
             <MaterialIcons name="share" size={22} color={colors.text} />
           </Pressable>
         </View>
@@ -150,13 +184,39 @@ export default function RecipeDetailScreen() {
           </View>
         </Animated.View>
 
+        {/* Unit System Toggle */}
+        <Animated.View entering={FadeInDown.duration(350).delay(150)} style={s.unitToggleSection}>
+          <Text style={[s.unitToggleLabel, { color: colors.textSecondary }]}>Unit System</Text>
+          <View style={s.unitToggleButtons}>
+            {(['metric', 'imperial'] as const).map((system) => {
+              const active = unitSystem === system;
+              return (
+                <Pressable
+                  key={system}
+                  style={[s.unitToggleButton, { backgroundColor: active ? colors.primary : colors.card }]}
+                  onPress={() => {
+                    if (unitSystem !== system) {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setUnitSystem(system);
+                    }
+                  }}
+                >
+                  <Text style={[s.unitToggleButtonText, { color: active ? '#FFFFFF' : colors.textSecondary }]}>
+                    {system.charAt(0).toUpperCase() + system.slice(1)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </Animated.View>
+
         {/* Ingredients */}
         {scaledIngredients.length > 0 && (
           <Animated.View entering={FadeInDown.duration(350).delay(200)} style={s.section}>
             <View style={s.sectionHeader}>
               <MaterialIcons name="restaurant" size={16} color={colors.primary} />
               <Text style={[s.sectionTitle, { color: colors.textSecondary }]}>Ingredients</Text>
-              {isScaled && <View style={[s.scaledBadge, { backgroundColor: colors.primaryLight }]}><Text style={[s.scaledBadgeText, { color: colors.primary }]}>Scaled</Text></View>}
+              {(isScaled || isConverted) && <View style={[s.scaledBadge, { backgroundColor: colors.primaryLight }]}><Text style={[s.scaledBadgeText, { color: colors.primary }]}>Scaled</Text></View>}
             </View>
             <View style={[s.ingredientTable, { borderColor: colors.borderPrimary }]}>
               <View style={[s.ingredientHeaderRow, { backgroundColor: colors.card, borderBottomColor: colors.borderPrimary }]}>
@@ -379,4 +439,9 @@ const s = StyleSheet.create({
   stepInstruction: { fontFamily: 'Inter_400Regular', fontSize: FontSize.md, lineHeight: 24 },
   timerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.sm },
   timerText: { fontFamily: 'Inter_700Bold', fontSize: FontSize.sm },
+  unitToggleSection: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+  unitToggleLabel: { fontFamily: 'Inter_700Bold', fontSize: FontSize.xs, textTransform: 'uppercase' as const, letterSpacing: 1.5 },
+  unitToggleButtons: { flexDirection: 'row', borderRadius: BorderRadius.md, overflow: 'hidden' as const },
+  unitToggleButton: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, minWidth: 80, alignItems: 'center' as const },
+  unitToggleButtonText: { fontFamily: 'Inter_600SemiBold', fontSize: FontSize.sm },
 });

@@ -239,8 +239,15 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   deleteAccount: async () => {
-    await supabase.auth.signOut();
-    set({ session: null, profile: null });
-    return { error: null };
+    try {
+      const { error: rpcError } = await supabase.rpc('delete_user_account');
+      if (rpcError) return { error: rpcError.message };
+      await supabase.auth.signOut();
+      set({ session: null, profile: null });
+      return { error: null };
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to delete account';
+      return { error: message };
+    }
   },
 }));

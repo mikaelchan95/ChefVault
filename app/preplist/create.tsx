@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -71,6 +72,7 @@ export default function CreatePrepListScreen() {
 
   const [name, setName] = useState('');
   const [date, setDate] = useState('');
+  const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const canGenerate = name.trim().length > 0 && selectedIds.size > 0;
@@ -186,23 +188,35 @@ export default function CreatePrepListScreen() {
 
             <View style={styles.field}>
               <Text style={[styles.fieldLabel, { color: colors.textTertiary }]}>Date</Text>
-              <TextInput
+              <Pressable
                 style={[
-                  styles.input,
+                  styles.dateButton,
                   {
                     backgroundColor: colors.field,
                     borderColor: colors.borderSubtle,
-                    color: colors.text,
                   },
                 ]}
-                value={date}
-                onChangeText={setDate}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.textMuted}
-                selectionColor={colors.primary}
-                keyboardType="numbers-and-punctuation"
-                maxLength={10}
-              />
+                onPress={() => setDatePickerVisible(true)}
+              >
+                <MaterialIcons name="calendar-today" size={20} color={colors.textMuted} />
+                <Text style={[styles.dateText, { color: date ? colors.text : colors.textMuted }]}>
+                  {date || 'Select date'}
+                </Text>
+              </Pressable>
+              {datePickerVisible && (
+                <DateTimePicker
+                  value={date ? new Date(date) : new Date()}
+                  mode="date"
+                  display="spinner"
+                  themeVariant="dark"
+                  onChange={(event, selectedDate) => {
+                    setDatePickerVisible(false);
+                    if (event.type === 'set' && selectedDate) {
+                      setDate(selectedDate.toISOString().split('T')[0]);
+                    }
+                  }}
+                />
+              )}
             </View>
           </View>
 
@@ -485,6 +499,19 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     height: 48,
     paddingHorizontal: Spacing.lg,
+    fontFamily: 'Inter_500Medium',
+    fontSize: FontSize.md,
+  },
+  dateButton: {
+    borderRadius: BorderRadius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    height: 48,
+    paddingHorizontal: Spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  dateText: {
     fontFamily: 'Inter_500Medium',
     fontSize: FontSize.md,
   },

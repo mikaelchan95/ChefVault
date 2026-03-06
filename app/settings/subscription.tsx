@@ -1,11 +1,11 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/src/hooks/useTheme';
 import { useAuthStore } from '@/src/stores/authStore';
-import { SettingsGroup } from '@/src/components/settings/SettingsGroup';
-import { SettingsRow } from '@/src/components/settings/SettingsRow';
+import { useToastStore } from '@/src/stores/toastStore';
 import { BorderRadius, FontSize, Spacing } from '@/src/constants/theme';
 
 interface PlanFeature {
@@ -31,8 +31,51 @@ export default function SubscriptionScreen() {
   const { colors, sharedStyles } = useTheme();
   const router = useRouter();
   const profile = useAuthStore((s) => s.profile);
+  const updateProfile = useAuthStore((s) => s.updateProfile);
+  const [updating, setUpdating] = useState(false);
 
   const isPro = profile?.plan === 'pro';
+
+  const handleUpgrade = () => {
+    Alert.alert('Upgrade to Pro', 'This will upgrade your account to the Pro plan.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Upgrade',
+        onPress: async () => {
+          setUpdating(true);
+          try {
+            updateProfile({ plan: 'pro' });
+            useToastStore.getState().show({ message: 'Upgraded to Pro!', type: 'success' });
+          } catch {
+            useToastStore.getState().show({ message: 'Upgrade failed', type: 'error' });
+          } finally {
+            setUpdating(false);
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleDowngrade = () => {
+    Alert.alert('Downgrade to Free', 'You will lose access to Pro features.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Downgrade',
+        style: 'destructive',
+        onPress: async () => {
+          setUpdating(true);
+          try {
+            updateProfile({ plan: 'free' });
+            useToastStore.getState().show({ message: 'Downgraded to Free', type: 'info' });
+          } catch {
+            useToastStore.getState().show({ message: 'Downgrade failed', type: 'error' });
+          } finally {
+            setUpdating(false);
+          }
+        },
+      },
+    ]);
+  };
 
   return (
     <View style={[sharedStyles.screenContainer, { paddingTop: insets.top }]}>
@@ -151,40 +194,44 @@ export default function SubscriptionScreen() {
 
         <View style={styles.sectionGap} />
 
-        <SettingsGroup label="Billing">
-          <SettingsRow
-            icon="event"
-            title="Next Billing Date"
-            value={isPro ? 'Apr 5, 2026' : '—'}
-            showChevron={false}
-          />
-          <SettingsRow
-            icon="credit-card"
-            title="Payment Method"
-            value={isPro ? '•••• 4242' : 'None'}
-            showChevron={false}
-            isLast
-          />
-        </SettingsGroup>
+        <View style={styles.billingNote}>
+          <MaterialIcons name="info-outline" size={16} color={colors.textMuted} />
+          <Text style={[styles.billingNoteText, { color: colors.textMuted }]}>
+            Payment integration coming soon
+          </Text>
+        </View>
 
         <View style={styles.buttonContainer}>
-          <Pressable
-            style={({ pressed }) => [
-              isPro ? styles.outlinedButton : sharedStyles.primaryButton,
-              isPro && { borderColor: colors.primary },
-              pressed && { opacity: 0.85 },
-            ]}
-          >
-            <Text
-              style={[
-                isPro
-                  ? [styles.outlinedButtonText, { color: colors.primary }]
-                  : sharedStyles.primaryButtonText,
+          {isPro ? (
+            <Pressable
+              style={({ pressed }) => [
+                styles.outlinedButton,
+                { borderColor: colors.error },
+                pressed && { opacity: 0.85 },
+                updating && { opacity: 0.6 },
               ]}
+              onPress={handleDowngrade}
+              disabled={updating}
             >
-              {isPro ? 'Manage Subscription' : 'Upgrade to Pro'}
-            </Text>
-          </Pressable>
+              <Text style={[styles.outlinedButtonText, { color: colors.error }]}>
+                {updating ? 'Processing…' : 'Downgrade to Free'}
+              </Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              style={({ pressed }) => [
+                sharedStyles.primaryButton,
+                pressed && { opacity: 0.85 },
+                updating && { opacity: 0.6 },
+              ]}
+              onPress={handleUpgrade}
+              disabled={updating}
+            >
+              <Text style={sharedStyles.primaryButtonText}>
+                {updating ? 'Processing…' : 'Upgrade to Pro'}
+              </Text>
+            </Pressable>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -272,6 +319,18 @@ const styles = StyleSheet.create({
   },
   sectionGap: {
     height: Spacing.xxl,
+  },
+  billingNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
+  },
+  billingNoteText: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: FontSize.sm,
   },
   buttonContainer: {
     paddingHorizontal: Spacing.lg,

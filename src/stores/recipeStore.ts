@@ -170,7 +170,7 @@ interface RecipeStore {
   ) => Promise<string>;
   updatePrepList: (id: string, updates: Partial<PrepList>) => void;
   deletePrepList: (id: string) => void;
-  addPrepItem: (listId: string, item: PrepItem) => void;
+  addPrepItem: (listId: string, item: PrepItem) => Promise<void>;
   removePrepItem: (listId: string, itemId: string) => void;
   updatePrepItem: (
     listId: string,
@@ -257,6 +257,23 @@ export const useRecipeStore = create<RecipeStore>((set, get) => ({
 
   addRecipe: async (recipe) => {
     const userId = await getCurrentUserId();
+
+    // Check recipe limit for free plan users
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('plan')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profile?.plan === 'free' || !profile?.plan) {
+        const currentCount = get().recipes.length;
+        if (currentCount >= 50) {
+          throw new Error('Free plan limit: 50 recipes. Upgrade to Pro for unlimited recipes.');
+        }
+      }
+    }
 
     const { data: row, error } = await supabase
       .from('recipes')
@@ -701,15 +718,8 @@ export const useRecipeStore = create<RecipeStore>((set, get) => ({
       });
   },
 
-  addPrepItem: (listId, item) => {
-    set((state) => ({
-      prepLists: state.prepLists.map((pl) =>
-        pl.id === listId
-          ? { ...pl, items: [...pl.items, item] }
-          : pl,
-      ),
-    }));
-    supabase
+  addPrepItem: async (listId, item) => {
+    const { data, error } = await supabase
       .from('prep_items')
       .insert({
         prep_list_id: listId,
@@ -720,9 +730,31 @@ export const useRecipeStore = create<RecipeStore>((set, get) => ({
         station: item.station,
         checked: item.checked,
       })
-      .then(({ error }) => {
-        if (error) console.error('Failed to add prep item:', error);
-      });
+      .select()
+      .single();
+
+    if (error || !data) {
+      console.error('Failed to add prep item:', error);
+      return;
+    }
+
+    const newItem: PrepItem = {
+      id: data.id,
+      name: data.name,
+      quantity: data.quantity,
+      unit: data.unit,
+      notes: data.notes,
+      station: data.station,
+      checked: data.checked,
+    };
+
+    set((state) => ({
+      prepLists: state.prepLists.map((pl) =>
+        pl.id === listId
+          ? { ...pl, items: [...pl.items, newItem] }
+          : pl,
+      ),
+    }));
   },
 
   removePrepItem: (listId, itemId) => {

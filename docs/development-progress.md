@@ -1,7 +1,7 @@
 ---
 title: Development Progress
 status: active
-last_updated: 2026-03-05
+last_updated: 2026-03-06
 ---
 
 # ChefVault — Development Progress
@@ -52,25 +52,45 @@ last_updated: 2026-03-05
 | Recipe count badge in library     | Done      | 2026-03-05 |
 | Settings: Active Features CTA     | Done      | 2026-03-05 |
 
+| Supabase Auth (full flow)         | Done      | 2026-03-05 |
+| Supabase DB integration (all CRUD)| Done      | 2026-03-05 |
+| RLS policies (all tables)         | Done      | 2026-03-05 |
+| Supabase Storage (images)         | Done      | 2026-03-05 |
+| Profile auto-creation trigger     | Done      | 2026-03-05 |
+
+| Account deletion (server-side)    | Done      | 2026-03-06 |
+| Free plan recipe limit (50)       | Done      | 2026-03-06 |
+| Data export (JSON via sharing)    | Done      | 2026-03-06 |
+| Security: password re-auth        | Done      | 2026-03-06 |
+| Share recipe                      | Done      | 2026-03-06 |
+| Edit collection modal             | Done      | 2026-03-06 |
+| Pull-to-refresh (all tabs)        | Done      | 2026-03-06 |
+| Date picker (prep lists)          | Done      | 2026-03-06 |
+| Cuisine chip selector             | Done      | 2026-03-06 |
+| Unit modal picker                 | Done      | 2026-03-06 |
+| Unit preference in scaling        | Done      | 2026-03-06 |
+| Subscription screen cleanup       | Done      | 2026-03-06 |
+| Bug fixes (prep ID, viewer, etc.) | Done      | 2026-03-06 |
+
 ### Pending
 
-| Task                              | Priority | Notes                      |
-| --------------------------------- | -------- | -------------------------- |
-| Supabase integration              | High     | Auth, DB, RLS              |
-| Recipe image support              | High     | Storage + expo-image       |
-| Drag-to-reorder                   | Medium   | Ingredients + steps        |
-| PDF / CSV export                  | Medium   | Pro feature                |
-| Edit collection inline            | Medium   | Name/description editing   |
-| Prep item manual management       | Medium   | Add/edit/remove items      |
-| Ingredient price database         | Medium   | Reusable cost catalog      |
-| Currency configuration            | Low      | USD default, user choice   |
-| Margin calculator                 | Low      | Selling price vs. cost     |
-| Animation polish                  | Low      | Reanimated transitions     |
-| Onboarding flow                   | Low      | First-time user experience |
-| Dark/Light theme toggle           | Low      | Currently dark-only        |
+| Task                              | Priority | Notes                           |
+| --------------------------------- | -------- | ------------------------------- |
+| Drag-to-reorder                   | Medium   | Ingredients + steps             |
+| PDF / CSV export                  | Medium   | Pro feature                     |
+| Payment integration               | Medium   | RevenueCat or Stripe            |
+| Image compression                 | Medium   | Resize before upload            |
+| i18n framework                    | Medium   | Wire language setting           |
+| Ingredient price database         | Medium   | Reusable cost catalog           |
+| Currency configuration            | Low      | USD default, user choice        |
+| Margin calculator                 | Low      | Selling price vs. cost          |
+| Offline-first cache               | Low      | AsyncStorage + sync             |
+| Onboarding flow                   | Low      | First-time user experience      |
+| Dark/Light theme toggle           | Low      | Currently dark-only             |
 
 ## Known Issues
 
-- Supabase not yet connected — app runs entirely on local mock data
 - Placeholder assets (icon, splash) need proper design
 - Path with spaces may cause issues in some Metro/Node configurations
+- Language setting saved but no i18n framework wired (all strings hardcoded English)
+- Subscription billing is placeholder (plan toggle, no real payment)

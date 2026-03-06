@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { FadeInDown, FadeInRight, ZoomIn } from 'react-native-reanimated';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,6 +30,7 @@ export default function CollectionDetailScreen() {
   const allRecipes = useRecipeStore((s) => s.recipes);
   const addRecipeToCollection = useRecipeStore((s) => s.addRecipeToCollection);
   const removeRecipeFromCollection = useRecipeStore((s) => s.removeRecipeFromCollection);
+  const updateCollection = useRecipeStore((s) => s.updateCollection);
   const deleteCollection = useRecipeStore((s) => s.deleteCollection);
 
   const collectionRecipes = useMemo(
@@ -39,6 +40,10 @@ export default function CollectionDetailScreen() {
 
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editStatus, setEditStatus] = useState<'active' | 'draft'>('active');
 
   const heroColor = useMemo(
     () => (collection ? stringToColor(collection.name, isDark) : colors.card),
@@ -49,6 +54,26 @@ export default function CollectionDetailScreen() {
     () => new Set(collection?.recipe_ids ?? []),
     [collection?.recipe_ids],
   );
+
+  const openEditModal = useCallback(() => {
+    if (!collection) return;
+    setEditName(collection.name);
+    setEditDescription(collection.description ?? '');
+    setEditStatus(collection.status === 'draft' ? 'draft' : 'active');
+    setMenuVisible(false);
+    setEditModalVisible(true);
+  }, [collection]);
+
+  const handleSaveEdit = useCallback(() => {
+    if (!id || !editName.trim()) return;
+    updateCollection(id, {
+      name: editName.trim(),
+      description: editDescription.trim() || null,
+      status: editStatus,
+    });
+    setEditModalVisible(false);
+    useToastStore.getState().show({ message: 'Collection updated', type: 'success' });
+  }, [id, editName, editDescription, editStatus, updateCollection]);
 
   const handleRemoveRecipe = useCallback(
     (recipe: Recipe) => {
@@ -242,6 +267,7 @@ export default function CollectionDetailScreen() {
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
         items={[
+          { label: 'Edit Collection', icon: 'edit', onPress: openEditModal },
           { label: 'Add Recipes', icon: 'playlist-add', onPress: () => { setMenuVisible(false); setAddModalVisible(true); } },
           { label: 'Delete Collection', icon: 'delete-outline', onPress: handleDeleteCollection, destructive: true },
         ]}
@@ -308,6 +334,114 @@ export default function CollectionDetailScreen() {
                 <Text style={sharedStyles.emptySubtitle}>Create some recipes first</Text>
               </View>
             )}
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Edit collection modal */}
+      <Modal visible={editModalVisible} animationType="slide" onRequestClose={() => setEditModalVisible(false)}>
+        <View style={[s.modalContainer, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+          <View style={[s.modalHeader, { borderBottomColor: colors.borderSubtle }]}>
+            <Pressable onPress={() => setEditModalVisible(false)} hitSlop={12}>
+              <MaterialIcons name="close" size={24} color={colors.text} />
+            </Pressable>
+            <Text style={[s.modalTitle, { color: colors.text }]}>Edit Collection</Text>
+            <Pressable
+              onPress={handleSaveEdit}
+              disabled={!editName.trim()}
+              hitSlop={12}
+            >
+              <Text
+                style={[
+                  s.editSaveBtn,
+                  { color: editName.trim() ? colors.primary : colors.textMuted },
+                ]}
+              >
+                Save
+              </Text>
+            </Pressable>
+          </View>
+
+          <ScrollView
+            contentContainerStyle={s.editFormContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={s.editField}>
+              <Text style={[s.editLabel, { color: colors.textSecondary }]}>Name</Text>
+              <TextInput
+                style={[
+                  s.editInput,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.borderSubtle,
+                    color: colors.text,
+                  },
+                ]}
+                value={editName}
+                onChangeText={setEditName}
+                placeholder="Collection name"
+                placeholderTextColor={colors.textMuted}
+                maxLength={50}
+                autoFocus
+              />
+            </View>
+
+            <View style={s.editField}>
+              <Text style={[s.editLabel, { color: colors.textSecondary }]}>Description</Text>
+              <TextInput
+                style={[
+                  s.editInput,
+                  s.editInputMultiline,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.borderSubtle,
+                    color: colors.text,
+                  },
+                ]}
+                value={editDescription}
+                onChangeText={setEditDescription}
+                placeholder="Brief description..."
+                placeholderTextColor={colors.textMuted}
+                maxLength={200}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+              />
+            </View>
+
+            <View style={s.editField}>
+              <Text style={[s.editLabel, { color: colors.textSecondary }]}>Status</Text>
+              <View style={[s.editSegmentRow, { backgroundColor: colors.card, borderColor: colors.borderSubtle }]}>
+                {(['active', 'draft'] as const).map((option) => {
+                  const isSelected = editStatus === option;
+                  return (
+                    <Pressable
+                      key={option}
+                      onPress={() => setEditStatus(option)}
+                      style={[
+                        s.editSegmentBtn,
+                        isSelected && { backgroundColor: colors.primary },
+                      ]}
+                    >
+                      <MaterialIcons
+                        name={option === 'active' ? 'check-circle' : 'edit'}
+                        size={16}
+                        color={isSelected ? '#FFFFFF' : colors.textMuted}
+                      />
+                      <Text
+                        style={[
+                          s.editSegmentText,
+                          { color: isSelected ? '#FFFFFF' : colors.textMuted },
+                        ]}
+                      >
+                        {option === 'active' ? 'Active' : 'Draft'}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
           </ScrollView>
         </View>
       </Modal>
@@ -503,5 +637,59 @@ const s = StyleSheet.create({
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  editSaveBtn: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: FontSize.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  editFormContent: {
+    padding: Spacing.lg,
+    gap: Spacing.xxl,
+  },
+  editField: {
+    gap: Spacing.sm,
+  },
+  editLabel: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: FontSize.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
+  editInput: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: FontSize.base,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+  },
+  editInputMultiline: {
+    minHeight: 88,
+    paddingTop: Spacing.md,
+  },
+  editSegmentRow: {
+    flexDirection: 'row',
+    borderRadius: BorderRadius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 4,
+    gap: 4,
+  },
+  editSegmentBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
+  editSegmentText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: FontSize.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
 });

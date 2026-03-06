@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/src/hooks/useTheme';
 import { useAuthStore } from '@/src/stores/authStore';
+import { useToastStore } from '@/src/stores/toastStore';
+import { exportUserData } from '@/src/lib/export';
 import { SettingsGroup } from '@/src/components/settings/SettingsGroup';
 import { ToggleRow } from '@/src/components/settings/ToggleRow';
 import { BorderRadius, FontSize, Spacing } from '@/src/constants/theme';
@@ -14,6 +17,37 @@ export default function DataBackupScreen() {
   const router = useRouter();
   const profile = useAuthStore((s) => s.profile);
   const autoBackup = profile?.auto_backup ?? true;
+  const [exporting, setExporting] = useState(false);
+  const [backingUp, setBackingUp] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await exportUserData();
+    } catch (err) {
+      useToastStore.getState().show({
+        message: err instanceof Error ? err.message : 'Export failed',
+        type: 'error',
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleBackupNow = async () => {
+    setBackingUp(true);
+    try {
+      await exportUserData();
+      useToastStore.getState().show({ message: 'Backup complete', type: 'success' });
+    } catch (err) {
+      useToastStore.getState().show({
+        message: err instanceof Error ? err.message : 'Backup failed',
+        type: 'error',
+      });
+    } finally {
+      setBackingUp(false);
+    }
+  };
 
   const handleToggleBackup = (value: boolean) => {
     useAuthStore.getState().updateProfile({ auto_backup: value });
@@ -79,10 +113,15 @@ export default function DataBackupScreen() {
             style={({ pressed }) => [
               sharedStyles.primaryButton,
               pressed && { opacity: 0.85 },
+              backingUp && { opacity: 0.6 },
             ]}
+            onPress={handleBackupNow}
+            disabled={backingUp}
           >
             <MaterialIcons name="backup" size={20} color={colors.white} />
-            <Text style={sharedStyles.primaryButtonText}>Backup Now</Text>
+            <Text style={sharedStyles.primaryButtonText}>
+              {backingUp ? 'Backing Up…' : 'Backup Now'}
+            </Text>
           </Pressable>
 
           <Pressable
@@ -90,7 +129,10 @@ export default function DataBackupScreen() {
               styles.outlinedButton,
               { borderColor: colors.primary },
               pressed && { opacity: 0.85 },
+              exporting && { opacity: 0.6 },
             ]}
+            onPress={handleExport}
+            disabled={exporting}
           >
             <MaterialIcons
               name="file-download"
@@ -100,7 +142,7 @@ export default function DataBackupScreen() {
             <Text
               style={[styles.outlinedButtonText, { color: colors.primary }]}
             >
-              Export All Data
+              {exporting ? 'Exporting…' : 'Export All Data'}
             </Text>
           </Pressable>
 
@@ -119,7 +161,7 @@ export default function DataBackupScreen() {
             <Text
               style={[styles.outlinedButtonText, { color: colors.textMuted }]}
             >
-              Import Data
+              Import Data — Coming Soon
             </Text>
           </Pressable>
         </View>

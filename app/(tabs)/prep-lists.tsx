@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -36,7 +36,21 @@ export default function PrepListsScreen() {
   const prepLists = useRecipeStore((s) => s.prepLists);
   const togglePrepItem = useRecipeStore((s) => s.togglePrepItem);
   const deletePrepList = useRecipeStore((s) => s.deletePrepList);
+  const initialize = useRecipeStore((s) => s.initialize);
   const [selectedListId, setSelectedListId] = useState<string | null>(prepLists[0]?.id ?? null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await initialize();
+    setRefreshing(false);
+  };
+
+  useEffect(() => {
+    if (!selectedListId || !prepLists.find((pl) => pl.id === selectedListId)) {
+      setSelectedListId(prepLists[0]?.id ?? null);
+    }
+  }, [prepLists]);
   const [tab, setTab] = useState<TabFilter>('all');
   const { scrollHandler, scrollY } = useScrollHandler();
 
@@ -163,6 +177,14 @@ export default function PrepListsScreen() {
         contentContainerStyle={styles.checklistContent}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor="#FF7A00"
+            colors={['#FF7A00']}
+          />
+        }
       >
         {groupedItems.map(([station, items], groupIdx) => (
           <AnimatedListItem key={station} index={groupIdx}>

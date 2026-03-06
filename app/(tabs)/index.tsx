@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -13,7 +13,7 @@ import { AnimatedFAB, useScrollHandler } from '@/src/components/animated/Animate
 import { AnimatedListItem } from '@/src/components/animated/AnimatedListItem';
 import { RecipeCardSkeleton } from '@/src/components/Skeleton';
 import type { Recipe } from '@/src/types';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 export default function RecipeLibraryScreen() {
   const insets = useSafeAreaInsets();
@@ -21,7 +21,15 @@ export default function RecipeLibraryScreen() {
   const { searchQuery, selectedCuisine, setSearchQuery, setSelectedCuisine, getFilteredRecipes, recipes } =
     useRecipeStore();
   const isLoaded = useRecipeStore((s) => s.isLoaded);
+  const initialize = useRecipeStore((s) => s.initialize);
   const { scrollHandler, scrollY } = useScrollHandler();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await initialize();
+    setRefreshing(false);
+  };
 
   const filteredRecipes = getFilteredRecipes();
   const cuisines = useMemo(() => {
@@ -70,6 +78,14 @@ export default function RecipeLibraryScreen() {
           showsVerticalScrollIndicator={false}
           onScroll={scrollHandler}
           scrollEventThrottle={16}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor="#FF7A00"
+              colors={['#FF7A00']}
+            />
+          }
           ListEmptyComponent={
             <View style={sharedStyles.emptyContainer}>
               <MaterialIcons name="restaurant" size={48} color={colors.textMuted} />

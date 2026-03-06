@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import {
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -60,6 +61,7 @@ export default function CreateRecipeScreen() {
     { instruction: '', timer_minutes: '' },
   ]);
   const [platingPhotos, setPlatingPhotos] = useState<string[]>([]);
+  const [unitPickerIndex, setUnitPickerIndex] = useState<number | null>(null);
   const saveScale = useSharedValue(1);
   const saveAnimStyle = useAnimatedStyle(() => ({
     transform: [{ scale: saveScale.value }],
@@ -196,18 +198,21 @@ export default function CreateRecipeScreen() {
                   selectionColor={colors.primary}
                 />
               </View>
+              <View style={styles.field}>
+                <Text style={[styles.fieldLabel, { color: colors.textTertiary }]}>Cuisine</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+                  {CUISINES.map((c) => (
+                    <Pressable
+                      key={c}
+                      style={[styles.chip, cuisine === c && styles.chipActive]}
+                      onPress={() => setCuisine(cuisine === c ? '' : c)}
+                    >
+                      <Text style={[styles.chipText, cuisine === c && styles.chipTextActive]}>{c}</Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
               <View style={styles.row}>
-                <View style={[styles.field, styles.flex]}>
-                  <Text style={[styles.fieldLabel, { color: colors.textTertiary }]}>Cuisine</Text>
-                  <TextInput
-                    style={[styles.input, { backgroundColor: colors.field, borderColor: colors.border, color: colors.text }]}
-                    value={cuisine}
-                    onChangeText={setCuisine}
-                    placeholder="e.g. French"
-                    placeholderTextColor={colors.textMuted}
-                    selectionColor={colors.primary}
-                  />
-                </View>
                 <View style={[styles.field, styles.flex]}>
                   <Text style={[styles.fieldLabel, { color: colors.textTertiary }]}>Servings</Text>
                   <TextInput
@@ -297,14 +302,12 @@ export default function CreateRecipeScreen() {
                         keyboardType="numeric"
                         selectionColor={colors.primary}
                       />
-                      <TextInput
-                        style={[styles.inlineInput, styles.unitInput, { color: colors.text }]}
-                        value={ing.unit}
-                        onChangeText={(v) => updateIngredient(index, 'unit', v as UnitType)}
-                        placeholder="Unit"
-                        placeholderTextColor={colors.textMuted}
-                        selectionColor={colors.primary}
-                      />
+                      <Pressable
+                        style={[styles.unitPicker, { backgroundColor: colors.card, borderColor: colors.border }]}
+                        onPress={() => setUnitPickerIndex(index)}
+                      >
+                        <Text style={[styles.unitPickerText, { color: colors.text }]}>{ing.unit}</Text>
+                      </Pressable>
                       <TextInput
                         style={[styles.inlineInput, styles.costInput, { color: colors.primary }]}
                         value={ing.cost}
@@ -392,6 +395,34 @@ export default function CreateRecipeScreen() {
           />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Unit Picker Modal */}
+      <Modal visible={unitPickerIndex !== null} transparent animationType="fade">
+        <Pressable style={styles.modalOverlay} onPress={() => setUnitPickerIndex(null)}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Select Unit</Text>
+            <View style={styles.unitGrid}>
+              {UNITS.map((u) => {
+                const isSelected = unitPickerIndex !== null && ingredients[unitPickerIndex]?.unit === u;
+                return (
+                  <Pressable
+                    key={u}
+                    style={[styles.unitOption, isSelected ? styles.unitOptionActive : { backgroundColor: colors.card, borderColor: colors.border }]}
+                    onPress={() => {
+                      if (unitPickerIndex !== null) {
+                        updateIngredient(unitPickerIndex, 'unit', u);
+                        setUnitPickerIndex(null);
+                      }
+                    }}
+                  >
+                    <Text style={[styles.unitOptionText, isSelected && styles.unitOptionTextActive]}>{u}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
 
       {/* Save Button */}
       <View
@@ -596,6 +627,24 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 0,
   },
+
+  chipScroll: { marginBottom: 0 },
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#2A2A2A', marginRight: 8, borderWidth: 1, borderColor: '#333333' },
+  chipActive: { backgroundColor: '#FF7A00', borderColor: '#FF7A00' },
+  chipText: { color: '#A0A0A0', fontSize: 14, fontFamily: 'Inter_500Medium' },
+  chipTextActive: { color: '#FFFFFF', fontWeight: '600' },
+
+  unitPicker: { width: 48, height: 36, borderRadius: BorderRadius.md, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
+  unitPickerText: { fontFamily: 'Inter_500Medium', fontSize: FontSize.sm, textAlign: 'center' },
+
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { width: '80%', borderRadius: BorderRadius.xl, padding: Spacing.xl, borderWidth: StyleSheet.hairlineWidth },
+  modalTitle: { fontFamily: 'Inter_700Bold', fontSize: FontSize.lg, marginBottom: Spacing.lg, textAlign: 'center' },
+  unitGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, justifyContent: 'center' },
+  unitOption: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, borderRadius: BorderRadius.md, borderWidth: StyleSheet.hairlineWidth, minWidth: 56, alignItems: 'center' },
+  unitOptionActive: { backgroundColor: '#FF7A00', borderColor: '#FF7A00' },
+  unitOptionText: { fontFamily: 'Inter_600SemiBold', fontSize: FontSize.md, color: '#A0A0A0' },
+  unitOptionTextActive: { color: '#FFFFFF' },
 
   saveBar: {
     position: 'absolute',

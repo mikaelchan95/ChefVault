@@ -13,6 +13,8 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/src/hooks/useTheme';
 import { useAuthStore } from '@/src/stores/authStore';
+import { useToastStore } from '@/src/stores/toastStore';
+import { supabase } from '@/src/lib/supabase';
 import { SettingsGroup } from '@/src/components/settings/SettingsGroup';
 import { SettingsRow } from '@/src/components/settings/SettingsRow';
 import { BorderRadius, FontSize, Spacing } from '@/src/constants/theme';
@@ -46,6 +48,7 @@ export default function SecurityScreen() {
   const insets = useSafeAreaInsets();
   const { colors, sharedStyles } = useTheme();
   const router = useRouter();
+  const profile = useAuthStore((s) => s.profile);
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -78,6 +81,17 @@ export default function SecurityScreen() {
     }
     setError(null);
     setSubmitting(true);
+
+    const { error: reAuthError } = await supabase.auth.signInWithPassword({
+      email: profile?.email ?? '',
+      password: currentPassword,
+    });
+    if (reAuthError) {
+      setSubmitting(false);
+      setError('Current password is incorrect');
+      return;
+    }
+
     const { error: apiError } = await useAuthStore
       .getState()
       .updatePassword(newPassword);
@@ -102,7 +116,12 @@ export default function SecurityScreen() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => useAuthStore.getState().deleteAccount(),
+          onPress: async () => {
+            const { error: deleteError } = await useAuthStore.getState().deleteAccount();
+            if (deleteError) {
+              useToastStore.getState().show({ message: deleteError, type: 'error' });
+            }
+          },
         },
       ],
     );

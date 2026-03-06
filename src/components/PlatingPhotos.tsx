@@ -190,6 +190,11 @@ export function PlatingPhotos({ photos, onPhotosChange, editable = false }: Plat
               pagingEnabled
               showsHorizontalScrollIndicator={false}
               contentOffset={{ x: viewerIndex * SCREEN_W, y: 0 }}
+              onScroll={(e) => {
+                const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
+                setViewerIndex(idx);
+              }}
+              scrollEventThrottle={16}
             >
               {photos.map((uri, i) => (
                 <View key={`viewer-${i}`} style={s.viewerPage}>

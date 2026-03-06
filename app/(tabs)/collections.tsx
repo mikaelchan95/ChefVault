@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +11,7 @@ import { FontSize, Spacing, BorderRadius } from '@/src/constants/theme';
 import { useRecipeStore } from '@/src/stores/recipeStore';
 import { useAuthStore } from '@/src/stores/authStore';
 import { CollectionCard, CreateCollectionCard } from '@/src/components/CollectionCard';
+import { CollectionCardSkeleton } from '@/src/components/Skeleton';
 import { SearchBar } from '@/src/components/SearchBar';
 import { AnimatedFAB, useScrollHandler } from '@/src/components/animated/AnimatedFAB';
 import { AnimatedListItem } from '@/src/components/animated/AnimatedListItem';
@@ -20,8 +21,17 @@ export default function CollectionsScreen() {
   const insets = useSafeAreaInsets();
   const { colors, sharedStyles } = useTheme();
   const collections = useRecipeStore((s) => s.collections);
+  const isLoaded = useRecipeStore((s) => s.isLoaded);
+  const initialize = useRecipeStore((s) => s.initialize);
   const profile = useAuthStore((s) => s.profile);
   const [search, setSearch] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await initialize();
+    setRefreshing(false);
+  };
 
   const filtered = search
     ? collections.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
@@ -78,17 +88,38 @@ export default function CollectionsScreen() {
         <SearchBar value={search} onChangeText={setSearch} placeholder="Search collections..." />
       </View>
 
-      <Animated.FlatList
-        data={dataWithCreate}
-        renderItem={renderItem}
-        keyExtractor={(item, index) => item?.id ?? `create-${index}`}
-        numColumns={2}
-        columnWrapperStyle={styles.gridRow}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        onScroll={scrollHandler}
-        scrollEventThrottle={16}
-      />
+      {!isLoaded ? (
+        <View style={styles.listContent}>
+          <View style={styles.gridRow}>
+            <View style={styles.gridItem}><CollectionCardSkeleton /></View>
+            <View style={styles.gridItem}><CollectionCardSkeleton /></View>
+          </View>
+          <View style={styles.gridRow}>
+            <View style={styles.gridItem}><CollectionCardSkeleton /></View>
+            <View style={styles.gridItem}><CollectionCardSkeleton /></View>
+          </View>
+        </View>
+      ) : (
+        <Animated.FlatList
+          data={dataWithCreate}
+          renderItem={renderItem}
+          keyExtractor={(item, index) => item?.id ?? `create-${index}`}
+          numColumns={2}
+          columnWrapperStyle={styles.gridRow}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          onScroll={scrollHandler}
+          scrollEventThrottle={16}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor="#FF7A00"
+              colors={['#FF7A00']}
+            />
+          }
+        />
+      )}
 
       <AnimatedFAB onPress={handleCreateCollection} scrollY={scrollY} />
     </View>
