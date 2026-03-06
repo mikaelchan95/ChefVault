@@ -7,6 +7,7 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/src/hooks/useTheme';
 import { FontSize, Spacing, BorderRadius } from '@/src/constants/theme';
+import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { useRecipeStore, STATION_TAGS } from '@/src/stores/recipeStore';
 import { PrepItemRow, PrepSectionHeader } from '@/src/components/prep/PrepItemRow';
 import { AnimatedFAB, useScrollHandler } from '@/src/components/animated/AnimatedFAB';
@@ -78,7 +79,7 @@ export default function PrepListsScreen() {
 
   const tabs: { key: TabFilter; label: string }[] = [
     { key: 'all', label: 'All Items' },
-    { key: 'pending', label: 'In Progress' },
+    { key: 'pending', label: 'To Do' },
     { key: 'completed', label: 'Completed' },
   ];
 
@@ -110,31 +111,25 @@ export default function PrepListsScreen() {
   return (
     <View style={[sharedStyles.screenContainer, { paddingTop: insets.top }]}>
       <View style={[styles.headerWrap, { borderBottomColor: colors.borderSubtle }]}>
-        <View style={styles.headerTop}>
-          <View style={styles.headerLeft}>
-            <MaterialIcons name="checklist" size={24} color={colors.primary} />
-            <View>
-              <Text style={[styles.headerTitle, { color: colors.text }]}>{selectedList?.name ?? 'Prep Lists'}</Text>
+        <ScreenHeader
+          icon="checklist"
+          title={selectedList?.name ?? 'Prep Lists'}
+          subtitle={selectedList ? `${selectedList.date} · ${totalItems} Items · ${checkedCount} Done` : undefined}
+          noBorder
+          rightAccessory={
+            <View style={styles.headerActions}>
+              <Pressable style={styles.iconButton} hitSlop={8} onPress={handleCreatePrepList}>
+                <MaterialIcons name="add-circle-outline" size={22} color={colors.primary} />
+              </Pressable>
               {selectedList && (
-                <Text style={[styles.headerSubtitle, { color: colors.textTertiary }]}>
-                  {selectedList.date} &middot; {totalItems} Items &middot; {checkedCount} Done
-                </Text>
+                <Pressable style={styles.iconButton} hitSlop={8} onPress={handleDeleteList}>
+                  <MaterialIcons name="delete-outline" size={22} color={colors.error} />
+                </Pressable>
               )}
             </View>
-          </View>
-          <View style={styles.headerActions}>
-            <Pressable style={styles.iconButton} hitSlop={8} onPress={handleCreatePrepList}>
-              <MaterialIcons name="add-circle-outline" size={22} color={colors.primary} />
-            </Pressable>
-            {selectedList && (
-              <Pressable style={styles.iconButton} hitSlop={8} onPress={handleDeleteList}>
-                <MaterialIcons name="delete-outline" size={22} color={colors.error} />
-              </Pressable>
-            )}
-          </View>
-        </View>
+          }
+        />
 
-        {/* Progress bar */}
         {selectedList && totalItems > 0 && (
           <View style={styles.progressWrap}>
             <View style={[styles.progressTrack, { backgroundColor: colors.field }]}>
@@ -181,8 +176,8 @@ export default function PrepListsScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor="#FF7A00"
-            colors={['#FF7A00']}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
           />
         }
       >
@@ -204,14 +199,43 @@ export default function PrepListsScreen() {
         ))}
         {groupedItems.length === 0 && (
           <View style={sharedStyles.emptyContainer}>
-            <MaterialIcons name={tab === 'completed' ? 'pending-actions' : 'check-circle'} size={48} color={colors.textMuted} />
-            <Text style={sharedStyles.emptyTitle}>{tab === 'completed' ? 'Nothing completed yet' : 'All done!'}</Text>
-            {!selectedList && (
-              <Pressable onPress={handleCreatePrepList}>
-                <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: FontSize.md, color: colors.primary, marginTop: Spacing.sm }}>
-                  Create your first prep list
+            {!selectedList ? (
+              <>
+                <MaterialIcons name="playlist-add" size={48} color={colors.textMuted} />
+                <Text style={sharedStyles.emptyTitle}>No prep lists yet</Text>
+                <Text style={sharedStyles.emptySubtitle}>
+                  Create a prep list to start tracking items
                 </Text>
-              </Pressable>
+                <Pressable onPress={handleCreatePrepList}>
+                  <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: FontSize.md, color: colors.primary, marginTop: Spacing.sm }}>
+                    Create your first prep list
+                  </Text>
+                </Pressable>
+              </>
+            ) : tab === 'completed' ? (
+              <>
+                <MaterialIcons name="pending-actions" size={48} color={colors.textMuted} />
+                <Text style={sharedStyles.emptyTitle}>Nothing completed yet</Text>
+                <Text style={sharedStyles.emptySubtitle}>
+                  Check off items as you complete them
+                </Text>
+              </>
+            ) : tab === 'pending' ? (
+              <>
+                <MaterialIcons name="check-circle" size={48} color={colors.success} />
+                <Text style={sharedStyles.emptyTitle}>All caught up</Text>
+                <Text style={sharedStyles.emptySubtitle}>
+                  Every item on this list is done
+                </Text>
+              </>
+            ) : (
+              <>
+                <MaterialIcons name="check-circle" size={48} color={colors.success} />
+                <Text style={sharedStyles.emptyTitle}>All caught up</Text>
+                <Text style={sharedStyles.emptySubtitle}>
+                  Every item on this list is done
+                </Text>
+              </>
             )}
           </View>
         )}
@@ -224,10 +248,6 @@ export default function PrepListsScreen() {
 
 const styles = StyleSheet.create({
   headerWrap: { borderBottomWidth: StyleSheet.hairlineWidth },
-  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, flex: 1 },
-  headerTitle: { fontFamily: 'Inter_700Bold', fontSize: FontSize.xl, letterSpacing: -0.3 },
-  headerSubtitle: { fontFamily: 'Inter_500Medium', fontSize: FontSize.sm, marginTop: 2 },
   headerActions: { flexDirection: 'row', gap: Spacing.xs },
   iconButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   progressWrap: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.md },

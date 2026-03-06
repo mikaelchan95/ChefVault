@@ -45,7 +45,7 @@ export default function SubscriptionScreen() {
           setUpdating(true);
           try {
             updateProfile({ plan: 'pro' });
-            useToastStore.getState().show({ message: 'Upgraded to Pro!', type: 'success' });
+            useToastStore.getState().show({ message: 'Upgraded to Pro', type: 'success' });
           } catch {
             useToastStore.getState().show({ message: 'Upgrade failed', type: 'error' });
           } finally {

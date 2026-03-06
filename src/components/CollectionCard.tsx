@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '@/src/hooks/useTheme';
-import { FontSize, Spacing, BorderRadius, stringToColor } from '@/src/constants/theme';
+import { FontSize, Spacing, BorderRadius, stringToColor, PressScale, PressSpring } from '@/src/constants/theme';
 import type { Collection } from '@/src/types';
 
 export function CollectionCard({ collection, onPress }: { collection: Collection; onPress: () => void }) {
@@ -14,10 +14,10 @@ export function CollectionCard({ collection, onPress }: { collection: Collection
   return (
     <Pressable
       onPress={onPress}
-      onPressIn={() => { scale.value = withSpring(0.96, { damping: 15 }); }}
-      onPressOut={() => { scale.value = withSpring(1, { damping: 15 }); }}
+      onPressIn={() => { scale.value = withSpring(PressScale.card, PressSpring.card); }}
+      onPressOut={() => { scale.value = withSpring(1, PressSpring.card); }}
     >
-      <Animated.View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.borderSubtle }, animStyle]}>
+      <Animated.View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.borderSubtle, shadowColor: colors.shadow, shadowOpacity: colors.cardShadowOpacity }, animStyle]}>
         <View style={[styles.cover, { backgroundColor: bgColor }]}>
           <MaterialIcons name="restaurant" size={32} color="rgba(255,255,255,0.15)" />
           {collection.status === 'active' && (
@@ -49,19 +49,19 @@ export function CreateCollectionCard({ onPress }: { onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
-      onPressIn={() => { scale.value = withSpring(0.96, { damping: 15 }); }}
-      onPressOut={() => { scale.value = withSpring(1, { damping: 15 }); }}
+      onPressIn={() => { scale.value = withSpring(PressScale.card, PressSpring.card); }}
+      onPressOut={() => { scale.value = withSpring(1, PressSpring.card); }}
     >
       <Animated.View style={[styles.createCard, { backgroundColor: colors.card, borderColor: colors.border }, animStyle]}>
         <MaterialIcons name="create-new-folder" size={36} color={colors.primary} />
-        <Text style={[styles.createText, { color: colors.textTertiary }]}>Create Folder</Text>
+        <Text style={[styles.createText, { color: colors.textTertiary }]}>New Collection</Text>
       </Animated.View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { flex: 1, borderRadius: BorderRadius.xl, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  card: { flex: 1, borderRadius: BorderRadius.xl, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden', shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 3 },
   // pressed style removed — handled by Reanimated spring animation
   cover: { height: 110, alignItems: 'center', justifyContent: 'center' },
   activeBadge: { position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(255,122,0,0.9)', borderRadius: BorderRadius.md, paddingHorizontal: 8, paddingVertical: 3 },

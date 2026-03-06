@@ -83,7 +83,7 @@ export default function CreateCollectionScreen() {
     try {
       const id = await addCollection(data);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      useToastStore.getState().show({ message: 'Collection created!', type: 'success' });
+      useToastStore.getState().show({ message: 'Collection created', type: 'success' });
       if (id) router.replace(`/collection/${id}`);
       else router.back();
     } catch {

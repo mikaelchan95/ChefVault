@@ -116,7 +116,7 @@ export default function CreatePrepListScreen() {
     try {
       await createPrepListFromRecipes(name.trim(), listDate, Array.from(selectedIds));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      useToastStore.getState().show({ message: 'Prep list created!', type: 'success' });
+      useToastStore.getState().show({ message: 'Prep list created', type: 'success' });
       router.back();
     } catch {
       useToastStore.getState().show({ message: 'Failed to create prep list', type: 'error' });

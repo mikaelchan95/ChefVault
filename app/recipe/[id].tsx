@@ -11,7 +11,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { useTheme } from '@/src/hooks/useTheme';
-import { FontSize, Spacing, BorderRadius } from '@/src/constants/theme';
+import { FontSize, Spacing, BorderRadius, PressScale, PressSpring } from '@/src/constants/theme';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useRecipeStore } from '@/src/stores/recipeStore';
 import { scaleRecipeIngredients, type ScaledIngredient } from '@/src/lib/scaling';
@@ -112,7 +112,7 @@ export default function RecipeDetailScreen() {
           <Pressable onPress={() => router.back()} hitSlop={12}>
             <MaterialIcons name="arrow-back" size={24} color={colors.text} />
           </Pressable>
-          <Text style={[s.headerTitle, { color: colors.text }]}>Recipe Detail</Text>
+          <Text style={[s.headerTitle, { color: colors.text }]} numberOfLines={1}>{recipe.title}</Text>
         </View>
         <View style={s.headerRight}>
           <Pressable onPress={() => router.push(`/recipe/edit/${recipe.id}`)} hitSlop={8}>
@@ -129,9 +129,6 @@ export default function RecipeDetailScreen() {
         <Animated.View entering={FadeInDown.duration(350).delay(0)} style={[s.titleSection, { borderBottomColor: colors.borderPrimary }]}>
           <View style={s.titleRow}>
             <Text style={[s.recipeTitle, { color: colors.text }]}>{recipe.title}</Text>
-            <View style={[s.statusBadge, { backgroundColor: colors.primary }]}>
-              <Text style={s.statusBadgeText}>Active</Text>
-            </View>
           </View>
           {recipe.description && <Text style={[s.description, { color: colors.textSecondary }]}>{recipe.description}</Text>}
           <View style={s.metaGrid}>
@@ -153,15 +150,15 @@ export default function RecipeDetailScreen() {
         {/* Scaling */}
         <Animated.View entering={FadeInDown.duration(350).delay(100)} style={[s.scalingSection, { backgroundColor: colors.card, borderBottomColor: colors.borderPrimary }]}>
           <View>
-            <Text style={[s.scalingTitle, { color: colors.textSecondary }]}>Scaling & Yield</Text>
-            <Text style={[s.scalingSubtitle, { color: colors.textMuted }]}>Automatic Weight Calculation</Text>
+            <Text style={[s.scalingTitle, { color: colors.textSecondary }]}>Servings</Text>
+            <Text style={[s.scalingSubtitle, { color: colors.textMuted }]}>Scale ingredients proportionally</Text>
           </View>
           <View style={[s.scalingControls, { backgroundColor: colors.background, borderColor: colors.primaryMuted }]}>
             <Animated.View style={minusAnimStyle}>
               <Pressable
                 style={[s.scalingButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-                onPressIn={() => { minusScale.value = withSpring(0.85); }}
-                onPressOut={() => { minusScale.value = withSpring(1); }}
+                onPressIn={() => { minusScale.value = withSpring(PressScale.control, PressSpring.control); }}
+                onPressOut={() => { minusScale.value = withSpring(1, PressSpring.control); }}
                 onPress={() => adjustServings(-1)}
               >
                 <MaterialIcons name="remove" size={20} color={colors.primary} />
@@ -174,8 +171,8 @@ export default function RecipeDetailScreen() {
             <Animated.View style={plusAnimStyle}>
               <Pressable
                 style={[s.scalingButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-                onPressIn={() => { plusScale.value = withSpring(0.85); }}
-                onPressOut={() => { plusScale.value = withSpring(1); }}
+                onPressIn={() => { plusScale.value = withSpring(PressScale.control, PressSpring.control); }}
+                onPressOut={() => { plusScale.value = withSpring(1, PressSpring.control); }}
                 onPress={() => adjustServings(1)}
               >
                 <MaterialIcons name="add" size={20} color={colors.primary} />
@@ -337,12 +334,10 @@ const s = StyleSheet.create({
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   headerTitle: { fontFamily: 'Inter_700Bold', fontSize: FontSize.lg, letterSpacing: -0.2 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg },
-  scrollContent: { paddingBottom: 40 },
+  scrollContent: { paddingBottom: 100 },
   titleSection: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.xxl, borderBottomWidth: StyleSheet.hairlineWidth },
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.sm },
   recipeTitle: { fontFamily: 'Inter_700Bold', fontSize: FontSize.xxxl, flex: 1, lineHeight: 36 },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: BorderRadius.sm, marginLeft: Spacing.sm },
-  statusBadgeText: { fontFamily: 'Inter_700Bold', fontSize: FontSize.xs, color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: 1 },
   description: { fontFamily: 'Inter_400Regular', fontSize: FontSize.md, lineHeight: 22, marginBottom: Spacing.xxl },
   metaGrid: { flexDirection: 'row', marginTop: Spacing.lg },
   metaItem: { flex: 1 },
@@ -356,7 +351,7 @@ const s = StyleSheet.create({
   scalingButton: { width: 36, height: 36, borderRadius: BorderRadius.sm, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
   servingsDisplay: { paddingHorizontal: Spacing.lg, alignItems: 'center', minWidth: 64 },
   servingsNumber: { fontFamily: 'Inter_700Bold', fontSize: FontSize.xl },
-  servingsLabel: { fontFamily: 'Inter_700Bold', fontSize: 9, textTransform: 'uppercase' },
+  servingsLabel: { fontFamily: 'Inter_700Bold', fontSize: FontSize.xs, textTransform: 'uppercase' },
   section: { marginTop: Spacing.xxl },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingHorizontal: Spacing.lg, marginBottom: Spacing.md },
   sectionTitle: { fontFamily: 'Inter_700Bold', fontSize: FontSize.md, textTransform: 'uppercase', letterSpacing: 2 },
@@ -368,59 +363,59 @@ const s = StyleSheet.create({
   qtyCol: { width: 64 },
   unitCol: { width: 48 },
   costCol: { width: 64, textAlign: 'right' },
-  costText: { fontFamily: 'Inter_500Medium', fontSize: 14 },
+  costText: { fontFamily: 'Inter_500Medium', fontSize: FontSize.md },
   costSection: {
-    marginHorizontal: 16,
-    marginTop: 24,
-    borderRadius: 12,
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.xxl,
+    borderRadius: BorderRadius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
   },
   costHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
   },
   costGrid: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.lg,
   },
   costCard: {
     flex: 1,
     alignItems: 'center',
-    gap: 4,
+    gap: Spacing.xs,
   },
   costCardDivider: {
     borderLeftWidth: StyleSheet.hairlineWidth,
-    paddingLeft: 16,
+    paddingLeft: Spacing.lg,
   },
   costCardLabel: {
     fontFamily: 'Inter_700Bold',
-    fontSize: 10,
+    fontSize: FontSize.xs,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
   },
   costCardValue: {
     fontFamily: 'Inter_700Bold',
-    fontSize: 24,
+    fontSize: FontSize.xxl,
   },
   costCardNote: {
     fontFamily: 'Inter_400Regular',
-    fontSize: 12,
+    fontSize: FontSize.sm,
   },
   partialBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: Spacing.sm,
     paddingVertical: 2,
-    borderRadius: 4,
-    marginLeft: 8,
+    borderRadius: BorderRadius.sm,
+    marginLeft: Spacing.sm,
   },
   partialBadgeText: {
     fontFamily: 'Inter_700Bold',
-    fontSize: 10,
+    fontSize: FontSize.xs,
     textTransform: 'uppercase',
   },
   ingredientRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg },

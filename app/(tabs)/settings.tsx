@@ -5,6 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/hooks/useTheme';
 import { FontSize, Spacing, BorderRadius } from '@/src/constants/theme';
+import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { useAuthStore } from '@/src/stores/authStore';
 import { SettingsGroup } from '@/src/components/settings/SettingsGroup';
 import { SettingsRow } from '@/src/components/settings/SettingsRow';
@@ -23,7 +24,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
-  const { colors, isDark, setDark, sharedStyles } = useTheme();
+  const { colors, isDark, setDark, themeMode, setThemeMode, sharedStyles } = useTheme();
   const router = useRouter();
   const profile = useAuthStore((s) => s.profile);
   const signOut = useAuthStore((s) => s.signOut);
@@ -45,9 +46,7 @@ export default function SettingsScreen() {
 
   return (
     <View style={[sharedStyles.screenContainer, { paddingTop: insets.top }]}>
-      <View style={sharedStyles.header}>
-        <Text style={sharedStyles.headerTitle}>Settings</Text>
-      </View>
+      <ScreenHeader title="Settings" />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.profileSection}>
@@ -73,7 +72,6 @@ export default function SettingsScreen() {
         <View style={styles.ctaContainer}>
           <View style={sharedStyles.card}>
             <View style={[styles.ctaBanner, { backgroundColor: colors.primaryLight }]}>
-              <View style={[styles.ctaBannerOverlay, { backgroundColor: colors.overlay }]} />
               <MaterialIcons name="verified" size={48} color={colors.primaryMuted} style={styles.ctaBannerIcon} />
             </View>
             <View style={styles.ctaContent}>
@@ -111,7 +109,22 @@ export default function SettingsScreen() {
 
         <View style={styles.sectionGap} />
         <SettingsGroup label="App Preferences">
-          <ToggleRow icon="dark-mode" iconColor={colors.primary} title="Dark Mode" value={isDark} onToggle={setDark} />
+          <ToggleRow
+            icon="brightness-auto"
+            iconColor={colors.primary}
+            title="Use System Theme"
+            value={themeMode === 'system'}
+            onToggle={(on) => setThemeMode(on ? 'system' : isDark ? 'dark' : 'light')}
+          />
+          {themeMode !== 'system' && (
+            <ToggleRow
+              icon="dark-mode"
+              iconColor={colors.primary}
+              title="Dark Mode"
+              value={isDark}
+              onToggle={setDark}
+            />
+          )}
           <SettingsRow icon="straighten" title="Default Units" value={unitsLabel} onPress={() => router.push('/settings/units')} />
           <SettingsRow
             icon="cloud-upload"
@@ -124,10 +137,6 @@ export default function SettingsScreen() {
         </SettingsGroup>
 
         <View style={styles.sectionGap} />
-        <SettingsGroup label="About">
-          <SettingsRow icon="info-outline" title="Version" value="0.1.0 (MVP)" showChevron={false} isLast />
-        </SettingsGroup>
-
         <View style={styles.logoutSection}>
           <Pressable
             onPress={handleLogout}
@@ -157,7 +166,6 @@ const styles = StyleSheet.create({
   profileEmail: { fontFamily: 'Inter_500Medium', fontSize: FontSize.md, marginTop: 2 },
   ctaContainer: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
   ctaBanner: { height: 80, overflow: 'hidden' },
-  ctaBannerOverlay: { ...StyleSheet.absoluteFillObject },
   ctaBannerIcon: { position: 'absolute', right: 16, top: 12 },
   ctaContent: { padding: Spacing.lg, gap: Spacing.md },
   ctaTitleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
@@ -168,6 +176,7 @@ const styles = StyleSheet.create({
   featureRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   featureText: { fontFamily: 'Inter_500Medium', fontSize: 14 },
   sectionGap: { height: Spacing.xxl },
+  // ctaBannerOverlay removed
   logoutSection: { alignItems: 'center', paddingTop: Spacing.xxxl, paddingBottom: Spacing.xxl, gap: Spacing.xxl },
   logoutButton: { paddingHorizontal: Spacing.xxxl, paddingVertical: Spacing.md, borderRadius: BorderRadius.md, borderWidth: StyleSheet.hairlineWidth },
   logoutText: { fontFamily: 'Inter_600SemiBold', fontSize: FontSize.md },

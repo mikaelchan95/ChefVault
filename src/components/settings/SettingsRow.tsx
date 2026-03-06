@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '@/src/hooks/useTheme';
-import { FontSize, Spacing } from '@/src/constants/theme';
+import { FontSize, Spacing, PressScale, PressSpring } from '@/src/constants/theme';
 
 interface SettingsRowProps {
   icon: keyof typeof MaterialIcons.glyphMap;
@@ -26,8 +26,8 @@ export function SettingsRow({ icon, title, value, valueColor, onPress, showChevr
   return (
     <>
       <Pressable
-        onPressIn={() => { scale.value = withSpring(0.98, { damping: 20, stiffness: 300 }); }}
-        onPressOut={() => { scale.value = withSpring(1, { damping: 20, stiffness: 300 }); }}
+        onPressIn={() => { scale.value = withSpring(PressScale.card, PressSpring.card); }}
+        onPressOut={() => { scale.value = withSpring(1, PressSpring.card); }}
         onPress={onPress}
         disabled={!onPress}
       >

@@ -51,7 +51,7 @@ export function Toast() {
       }
     })
     .onEnd((e) => {
-      if (e.translationY < -30) {
+      if (e.translationY < -50 || (e.translationY < -20 && e.velocityY < -500)) {
         translateY.value = withTiming(-100, { duration: 200 });
         opacity.value = withTiming(0, { duration: 200 });
         runOnJS(hide)();
@@ -79,6 +79,7 @@ export function Toast() {
             backgroundColor: colors.card,
             borderColor: colors.borderSubtle,
             borderLeftColor: accentColor,
+            shadowColor: colors.shadow,
           },
           animatedStyle,
         ]}
@@ -102,7 +103,6 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderLeftWidth: 4,
     zIndex: 9999,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,

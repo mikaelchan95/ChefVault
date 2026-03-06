@@ -1,4 +1,5 @@
 import { StyleSheet, TextInput, View } from 'react-native';
+
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '@/src/hooks/useTheme';
@@ -10,11 +11,11 @@ interface SearchBarProps {
   placeholder?: string;
 }
 
-export function SearchBar({ value, onChangeText, placeholder = 'Search recipes, ingredients, or tags' }: SearchBarProps) {
+export function SearchBar({ value, onChangeText, placeholder = 'Search recipes or ingredients' }: SearchBarProps) {
   const { colors } = useTheme();
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.card }]}>
+    <View style={[styles.container, { backgroundColor: colors.card, borderColor: colors.borderSubtle }]}>
       <MaterialIcons name="search" size={20} color={colors.textMuted} style={styles.icon} />
       <TextInput
         style={[styles.input, { color: colors.text }]}
@@ -36,7 +37,7 @@ export function SearchBar({ value, onChangeText, placeholder = 'Search recipes, 
 }
 
 const styles = StyleSheet.create({
-  container: { flexDirection: 'row', alignItems: 'center', borderRadius: BorderRadius.lg, paddingHorizontal: Spacing.md, height: 48 },
+  container: { flexDirection: 'row', alignItems: 'center', borderRadius: BorderRadius.lg, paddingHorizontal: Spacing.md, height: 48, borderWidth: StyleSheet.hairlineWidth },
   icon: { marginRight: Spacing.sm },
   input: { flex: 1, fontFamily: 'Inter_400Regular', fontSize: FontSize.md, padding: 0 },
   clearIcon: { marginLeft: Spacing.sm, padding: 4 },

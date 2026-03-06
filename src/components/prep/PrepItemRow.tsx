@@ -60,9 +60,9 @@ const styles = StyleSheet.create({
   content: { flex: 1 },
   // contentChecked opacity now animated via Reanimated
   mainRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  name: { fontFamily: 'Inter_700Bold', fontSize: 17, flex: 1, marginRight: Spacing.sm },
+  name: { fontFamily: 'Inter_700Bold', fontSize: FontSize.base, flex: 1, marginRight: Spacing.sm },
   strikethrough: { textDecorationLine: 'line-through' },
-  quantity: { fontFamily: 'Inter_700Bold', fontSize: 17 },
+  quantity: { fontFamily: 'Inter_700Bold', fontSize: FontSize.base },
   notes: { fontFamily: 'Inter_400Regular', fontSize: FontSize.md, marginTop: 2 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4, marginBottom: Spacing.md },
   sectionTitle: { fontFamily: 'Inter_700Bold', fontSize: FontSize.sm, textTransform: 'uppercase', letterSpacing: 1.5 },

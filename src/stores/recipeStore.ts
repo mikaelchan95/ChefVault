@@ -151,6 +151,7 @@ interface RecipeStore {
   addRecipe: (recipe: Recipe) => Promise<void>;
   updateRecipe: (id: string, updates: Partial<Recipe>) => Promise<void>;
   deleteRecipe: (id: string) => void;
+  deleteRecipes: (ids: string[]) => void;
 
   getCollectionById: (id: string) => Collection | undefined;
   getCollectionRecipes: (collectionId: string) => Recipe[];
@@ -436,6 +437,25 @@ export const useRecipeStore = create<RecipeStore>((set, get) => ({
       .then(({ error }) => {
         if (error) {
           console.error('Failed to delete recipe:', error);
+          set({ recipes: prev });
+        }
+      });
+  },
+
+  deleteRecipes: (ids) => {
+    if (!ids.length) return;
+    const prev = get().recipes;
+    const idSet = new Set(ids);
+    set((state) => ({
+      recipes: state.recipes.filter((r) => !idSet.has(r.id)),
+    }));
+    supabase
+      .from('recipes')
+      .delete()
+      .in('id', ids)
+      .then(({ error }) => {
+        if (error) {
+          console.error('Failed to batch delete recipes:', error);
           set({ recipes: prev });
         }
       });

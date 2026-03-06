@@ -1,8 +1,9 @@
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Animated, {
+  useAnimatedReaction,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
@@ -10,8 +11,9 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { useTheme } from '@/src/hooks/useTheme';
+import { PressScale, PressSpring } from '@/src/constants/theme';
 
-const SPRING_CONFIG = { damping: 15, stiffness: 120 };
+const HIDE_SPRING = { damping: 15, stiffness: 120 };
 
 interface AnimatedFABProps {
   onPress: () => void;
@@ -33,22 +35,25 @@ export function AnimatedFAB({ onPress, icon = 'add', scrollY }: AnimatedFABProps
   const { colors } = useTheme();
   const scale = useSharedValue(1);
   const prevScrollY = useSharedValue(0);
-  const isHidden = useSharedValue(false);
+  const translateY = useSharedValue(0);
 
-  const animatedStyle = useAnimatedStyle(() => {
-    const diff = scrollY.value - prevScrollY.value;
-    if (Math.abs(diff) > 5) {
-      isHidden.value = diff > 0 && scrollY.value > 50;
-      prevScrollY.value = scrollY.value;
-    }
+  useAnimatedReaction(
+    () => scrollY.value,
+    (current) => {
+      const diff = current - prevScrollY.value;
+      if (Math.abs(diff) > 15) {
+        translateY.value = withSpring(diff > 0 && current > 50 ? 200 : 0, HIDE_SPRING);
+        prevScrollY.value = current;
+      }
+    },
+  );
 
-    return {
-      transform: [
-        { translateY: withSpring(isHidden.value ? 200 : 0, SPRING_CONFIG) },
-        { scale: scale.value },
-      ],
-    };
-  });
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: translateY.value },
+      { scale: scale.value },
+    ],
+  }));
 
   const handlePress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -60,8 +65,8 @@ export function AnimatedFAB({ onPress, icon = 'add', scrollY }: AnimatedFABProps
       <Pressable
         style={styles.pressable}
         onPress={handlePress}
-        onPressIn={() => { scale.value = withSpring(0.92, SPRING_CONFIG); }}
-        onPressOut={() => { scale.value = withSpring(1, SPRING_CONFIG); }}
+        onPressIn={() => { scale.value = withSpring(PressScale.button, PressSpring.button); }}
+        onPressOut={() => { scale.value = withSpring(1, PressSpring.button); }}
       >
         <MaterialIcons name={icon} size={28} color="#FFFFFF" />
       </Pressable>

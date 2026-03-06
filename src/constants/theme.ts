@@ -17,7 +17,7 @@ export const DarkColors = {
   text: '#E0E0E0',
   textSecondary: '#94A3B8',
   textTertiary: '#64748B',
-  textMuted: '#475569',
+  textMuted: '#6B7280',
   white: '#FFFFFF',
   black: '#000000',
 
@@ -30,6 +30,9 @@ export const DarkColors = {
   errorLight: 'rgba(239, 68, 68, 0.1)',
   errorBorder: 'rgba(239, 68, 68, 0.2)',
   warning: '#F59E0B',
+  info: '#3B82F6',
+  infoLight: 'rgba(59, 130, 246, 0.12)',
+  infoBorder: 'rgba(59, 130, 246, 0.2)',
 
   tabInactive: '#64748B',
   overlay: 'rgba(0, 0, 0, 0.4)',
@@ -54,7 +57,7 @@ export const LightColors: ColorPalette = {
   text: '#1C1917',
   textSecondary: '#57534E',
   textTertiary: '#78716C',
-  textMuted: '#A8A29E',
+  textMuted: '#8C857F',
   white: '#FFFFFF',
   black: '#000000',
 
@@ -67,8 +70,11 @@ export const LightColors: ColorPalette = {
   errorLight: 'rgba(220, 38, 38, 0.06)',
   errorBorder: 'rgba(220, 38, 38, 0.12)',
   warning: '#D97706',
+  info: '#2563EB',
+  infoLight: 'rgba(37, 99, 235, 0.06)',
+  infoBorder: 'rgba(37, 99, 235, 0.12)',
 
-  tabInactive: '#A8A29E',
+  tabInactive: '#8C857F',
   overlay: 'rgba(0, 0, 0, 0.25)',
 
   shadow: '#78716C',
@@ -123,8 +129,20 @@ export function stringToColor(str: string, isDark = true): string {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
   }
   const hue = Math.abs(hash) % 360;
-  return isDark ? `hsl(${hue}, 35%, 18%)` : `hsl(${hue}, 40%, 88%)`;
+  return isDark ? `hsl(${hue}, 35%, 18%)` : `hsl(${hue}, 35%, 78%)`;
 }
+
+export const PressScale = {
+  card: 0.97,
+  button: 0.95,
+  control: 0.92,
+} as const;
+
+export const PressSpring = {
+  card: { damping: 15, stiffness: 150 },
+  button: { damping: 15, stiffness: 150 },
+  control: { damping: 20, stiffness: 300 },
+} as const;
 
 /** Creates themed SharedStyles. Call once per theme change, cache via useMemo. */
 export function createSharedStyles(c: ColorPalette) {

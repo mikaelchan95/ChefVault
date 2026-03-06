@@ -1,11 +1,20 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { Image } from 'expo-image';
+import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTheme } from '@/src/hooks/useTheme';
-import { FontSize, BorderRadius, Spacing, stringToColor } from '@/src/constants/theme';
+import { FontSize, BorderRadius, Spacing, stringToColor, PressScale, PressSpring } from '@/src/constants/theme';
 import { calculateRecipeCost, formatCurrency } from '@/src/lib/costing';
 import type { Recipe } from '@/src/types';
+
+interface RecipeCardProps {
+  recipe: Recipe;
+  selectable?: boolean;
+  selected?: boolean;
+  onPress?: () => void;
+  onLongPress?: () => void;
+}
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -22,7 +31,7 @@ function formatTime(prepTime: number | null, cookTime: number | null): string {
   return `${total} min`;
 }
 
-export function RecipeCard({ recipe }: { recipe: Recipe }) {
+export function RecipeCard({ recipe, selectable, selected, onPress, onLongPress }: RecipeCardProps) {
   const { colors, isDark } = useTheme();
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
@@ -35,30 +44,42 @@ export function RecipeCard({ recipe }: { recipe: Recipe }) {
 
   return (
     <Pressable
-      onPress={() => router.push(`/recipe/${recipe.id}`)}
-      onPressIn={() => { scale.value = withSpring(0.97, { damping: 15 }); }}
-      onPressOut={() => { scale.value = withSpring(1, { damping: 15 }); }}
+      onPress={onPress ?? (() => router.push(`/recipe/${recipe.id}`))}
+      onLongPress={onLongPress}
+      onPressIn={() => { scale.value = withSpring(PressScale.card, PressSpring.card); }}
+      onPressOut={() => { scale.value = withSpring(1, PressSpring.card); }}
     >
       <Animated.View
         style={[
           styles.card,
           { backgroundColor: colors.card, borderColor: colors.borderSubtle, shadowColor: colors.shadow, shadowOpacity: colors.cardShadowOpacity },
+          selectable && selected && { borderColor: colors.primary, borderWidth: 1.5 },
           animStyle,
         ]}
       >
-        {thumbUri ? (
-          <Image source={{ uri: thumbUri }} style={[styles.thumbnail, { borderColor: colors.borderSubtle }]} contentFit="cover" transition={200} />
-        ) : (
-          <View style={[styles.thumbnail, { backgroundColor: bgColor, borderColor: colors.borderSubtle }]}>
-            <Text style={styles.thumbnailText}>{initial}</Text>
-          </View>
-        )}
+        <View>
+          {thumbUri ? (
+            <Image source={{ uri: thumbUri }} style={[styles.thumbnail, { borderColor: colors.borderSubtle }]} contentFit="cover" transition={200} />
+          ) : (
+            <View style={[styles.thumbnail, { backgroundColor: bgColor, borderColor: colors.borderSubtle }]}>
+              <Text style={styles.thumbnailText}>{initial}</Text>
+            </View>
+          )}
+          {selectable && (
+            <View style={[
+              selectStyles.checkCircle,
+              { borderColor: selected ? colors.primary : colors.textMuted, backgroundColor: selected ? colors.primary : colors.card },
+            ]}>
+              {selected && <MaterialIcons name="check" size={14} color="#FFFFFF" />}
+            </View>
+          )}
+        </View>
         <View style={styles.content}>
           <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{recipe.title}</Text>
           <View style={styles.metaRow}>
             {recipe.cuisine && <Text style={[styles.metaText, { color: colors.textTertiary }]}>{recipe.cuisine}</Text>}
             {recipe.cuisine && <View style={[styles.dot, { backgroundColor: colors.border }]} />}
-            <Text style={[styles.metaText, { color: colors.textTertiary }]}>{recipe.servings} Servings</Text>
+            <Text style={[styles.metaText, { color: colors.textTertiary }]}>{recipe.servings} {recipe.servings === 1 ? 'Serving' : 'Servings'}</Text>
             {timeStr !== '' && <View style={[styles.dot, { backgroundColor: colors.border }]} />}
             {timeStr !== '' && <Text style={[styles.metaText, { color: colors.textTertiary }]}>{timeStr}</Text>}
             {costStr && <View style={[styles.dot, { backgroundColor: colors.border }]} />}
@@ -92,7 +113,21 @@ const styles = StyleSheet.create({
   content: { flex: 1, minWidth: 0 },
   title: { fontFamily: 'Inter_700Bold', fontSize: FontSize.base, marginBottom: 4 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: 4 },
-  metaText: { fontFamily: 'Inter_500Medium', fontSize: FontSize.xs, textTransform: 'uppercase', letterSpacing: 1 },
+  metaText: { fontFamily: 'Inter_500Medium', fontSize: FontSize.sm, textTransform: 'uppercase', letterSpacing: 0.8 },
   dot: { width: 3, height: 3, borderRadius: 1.5 },
   dateText: { fontFamily: 'Inter_400Regular', fontSize: FontSize.sm },
+});
+
+const selectStyles = StyleSheet.create({
+  checkCircle: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
