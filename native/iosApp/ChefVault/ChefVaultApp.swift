@@ -33,7 +33,7 @@ struct RootView: View {
         case .unauthenticated:
             NavigationStack { LoginView(auth: auth) }
         case .authenticated:
-            HomeView(auth: auth, sdk: sdk)
+            RecipeLibraryView(sdk: sdk, auth: auth)
         }
     }
 }
