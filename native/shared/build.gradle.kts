@@ -1,5 +1,7 @@
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.skie)
 }
 
 kotlin {
@@ -11,6 +13,7 @@ kotlin {
         target.binaries.framework {
             baseName = "ChefVaultShared"
             isStatic = true
+            binaryOption("bundleId", "com.chefvault.shared")
         }
     }
 
@@ -19,8 +22,21 @@ kotlin {
     macosArm64()
 
     sourceSets {
+        commonMain.dependencies {
+            implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(project.dependencies.platform(libs.supabase.bom))
+            implementation(libs.supabase.auth)
+            implementation(libs.supabase.postgrest)
+            implementation(libs.supabase.storage)
+        }
         commonTest.dependencies {
             implementation(kotlin("test"))
+        }
+        // Ktor Darwin engine for all Apple targets (iOS + macOS host-test). supabase-kt
+        // needs a platform HTTP engine supplied explicitly.
+        appleMain.dependencies {
+            implementation(libs.ktor.client.darwin)
         }
     }
 }
