@@ -65,6 +65,16 @@ data class RecipeInsert(
 )
 
 @Serializable
+data class RecipeUpdate(
+    val title: String,
+    val cuisine: String? = null,
+    val servings: Int,
+    val prepTime: Int? = null,
+    val cookTime: Int? = null,
+    val description: String? = null,
+)
+
+@Serializable
 data class IngredientInsert(
     val recipeId: String,
     val name: String,

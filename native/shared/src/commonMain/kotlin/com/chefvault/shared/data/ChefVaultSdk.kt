@@ -1,9 +1,17 @@
 package com.chefvault.shared.data
 
 import com.chefvault.shared.data.remote.SupabaseAuthRepository
+import com.chefvault.shared.data.remote.SupabaseCollectionRepository
+import com.chefvault.shared.data.remote.SupabasePrepListRepository
+import com.chefvault.shared.data.remote.SupabaseProfileRepository
 import com.chefvault.shared.data.remote.SupabaseRecipeRepository
+import com.chefvault.shared.data.remote.SupabaseStorageRepository
 import com.chefvault.shared.data.repository.AuthRepository
+import com.chefvault.shared.data.repository.CollectionRepository
+import com.chefvault.shared.data.repository.PrepListRepository
+import com.chefvault.shared.data.repository.ProfileRepository
 import com.chefvault.shared.data.repository.RecipeRepository
+import com.chefvault.shared.data.repository.StorageRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
@@ -46,4 +54,8 @@ class ChefVaultSDK(config: SupabaseConfig) {
 
     val auth: AuthRepository = SupabaseAuthRepository(client)
     val recipes: RecipeRepository = SupabaseRecipeRepository(client, auth, scope)
+    val collections: CollectionRepository = SupabaseCollectionRepository(client, auth)
+    val prepLists: PrepListRepository = SupabasePrepListRepository(client, auth, recipes)
+    val profile: ProfileRepository = SupabaseProfileRepository(client, auth)
+    val storage: StorageRepository = SupabaseStorageRepository(client, auth)
 }

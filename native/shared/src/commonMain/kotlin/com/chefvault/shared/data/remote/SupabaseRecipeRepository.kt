@@ -86,4 +86,76 @@ class SupabaseRecipeRepository(
         refresh()
         return _recipes.value.firstOrNull { it.id == recipeId } ?: inserted.toDomain()
     }
+
+    override suspend fun update(id: String, form: NewRecipe) {
+        client.from("recipes")
+            .update(
+                RecipeUpdate(
+                    title = form.title,
+                    cuisine = form.cuisine,
+                    servings = form.servings,
+                    prepTime = form.prepTime,
+                    cookTime = form.cookTime,
+                    description = form.description,
+                ),
+            ) { filter { eq("id", id) } }
+
+        // Ingredients and steps are replaced wholesale (mirrors recipeStore.updateRecipe).
+        client.from("ingredients").delete { filter { eq("recipe_id", id) } }
+        if (form.ingredients.isNotEmpty()) {
+            client.from("ingredients").insert(
+                form.ingredients.mapIndexed { index, ing ->
+                    IngredientInsert(
+                        recipeId = id,
+                        name = ing.name,
+                        quantity = ing.quantity,
+                        unit = ing.unit,
+                        notes = ing.notes,
+                        costPerUnit = ing.costPerUnit,
+                        sortOrder = index,
+                    )
+                },
+            )
+        }
+
+        client.from("steps").delete { filter { eq("recipe_id", id) } }
+        if (form.steps.isNotEmpty()) {
+            client.from("steps").insert(
+                form.steps.mapIndexed { index, step ->
+                    StepInsert(
+                        recipeId = id,
+                        stepNumber = index + 1,
+                        instruction = step.instruction,
+                        timerSeconds = step.timerSeconds,
+                    )
+                },
+            )
+        }
+
+        refresh()
+    }
+
+    override suspend fun delete(id: String) {
+        val previous = _recipes.value
+        _recipes.value = previous.filterNot { it.id == id } // optimistic
+        try {
+            client.from("recipes").delete { filter { eq("id", id) } }
+        } catch (e: Exception) {
+            _recipes.value = previous // rollback
+            throw e
+        }
+    }
+
+    override suspend fun deleteMany(ids: List<String>) {
+        if (ids.isEmpty()) return
+        val previous = _recipes.value
+        val idSet = ids.toSet()
+        _recipes.value = previous.filterNot { it.id in idSet } // optimistic
+        try {
+            client.from("recipes").delete { filter { isIn("id", ids) } }
+        } catch (e: Exception) {
+            _recipes.value = previous // rollback
+            throw e
+        }
+    }
 }
