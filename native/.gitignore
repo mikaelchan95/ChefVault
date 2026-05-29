@@ -18,6 +18,11 @@ DerivedData/
 .swiftpm/
 *.moved-aside
 
+# Generated Xcode project (regenerate with xcodegen) + secrets
+iosApp/*.xcodeproj/
+iosApp/Secrets.xcconfig
+iosApp/**/Info.generated.plist
+
 # IDE
 .idea/
 *.iml
