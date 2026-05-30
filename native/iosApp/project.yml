@@ -30,6 +30,11 @@ targets:
         SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)
         CFBundleURLTypes:
           - CFBundleURLSchemes: [chefvault]
+        UIAppFonts:
+          - BricolageGrotesque.ttf
+          - HankenGrotesk.ttf
+          - SpaceMono-Regular.ttf
+          - SpaceMono-Bold.ttf
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.chefvault.app

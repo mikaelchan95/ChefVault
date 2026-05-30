@@ -15,7 +15,7 @@ struct ChefVaultApp: App {
     var body: some Scene {
         WindowGroup {
             RootView(auth: auth, sdk: sdk)
-                .tint(CV.primary)
+                .tint(SL.accent)
                 .task { await auth.observe() }
         }
     }
@@ -33,7 +33,7 @@ struct RootView: View {
         case .unauthenticated:
             NavigationStack { LoginView(auth: auth) }
         case .authenticated:
-            MainTabView(sdk: sdk, auth: auth)
+            SLTabScaffold(sdk: sdk, auth: auth)
         }
     }
 }

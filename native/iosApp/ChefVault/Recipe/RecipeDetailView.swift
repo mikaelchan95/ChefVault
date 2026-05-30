@@ -48,49 +48,52 @@ struct RecipeDetailView: View {
         _targetServings = State(initialValue: baseServings)
     }
 
+    /// Segmented unit toggle is index-driven (0 = Metric, 1 = Imperial); bridge to the
+    /// shared `MeasurementSystem` enum.
+    private var unitIndex: Binding<Int> {
+        Binding(
+            get: { unitSystem == .imperial ? 1 : 0 },
+            set: { unitSystem = $0 == 1 ? .imperial : .metric },
+        )
+    }
+
     var body: some View {
-        ScrollView {
-            if let recipe = vm.recipe {
-                VStack(alignment: .leading, spacing: CV.Spacing.xl) {
-                    header(recipe)
-                    servingsScaler(recipe)
-                    unitToggle
-                    ingredientsCard(recipe)
-                    costCard(recipe)
-                    if !recipe.steps.isEmpty { methodCard(recipe) }
-                    if !recipe.platingPhotos.isEmpty {
-                        VStack(alignment: .leading, spacing: CV.Spacing.md) {
-                            CVSectionHeader(title: "Plating")
-                            PlatingPhotosViewer(photos: recipe.platingPhotos)
+        NavigationStack {
+            VStack(spacing: 0) {
+                backRow
+                if let recipe = vm.recipe {
+                    controlBar(recipe)
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 18) {
+                            metaGrid(recipe)
+                            costCard(recipe)
+                            ingredientsSection(recipe)
+                            if !recipe.steps.isEmpty { methodSection(recipe) }
+                            if !recipe.platingPhotos.isEmpty { platingSection(recipe) }
                         }
+                        .padding(SL.Pad.screen)
+                        .padding(.bottom, 40)
                     }
-                }
-                .padding(CV.Spacing.lg)
-            } else {
-                ContentUnavailableView("Recipe unavailable", systemImage: "fork.knife")
-                    .padding(.top, CV.Spacing.xxxl)
-            }
-        }
-        .navigationTitle(vm.recipe?.title ?? "Recipe")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            if let recipe = vm.recipe {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Button { showEdit = true } label: { Label("Edit", systemImage: "pencil") }
-                        ShareLink(item: shareText(recipe)) { Label("Share", systemImage: "square.and.arrow.up") }
-                        Button(role: .destructive) { confirmDelete = true } label: { Label("Delete", systemImage: "trash") }
-                    } label: { Image(systemName: "ellipsis.circle") }
+                } else {
+                    Spacer()
+                    VStack(spacing: 6) {
+                        Image(systemName: "fork.knife").font(.system(size: 26)).foregroundStyle(SL.accent)
+                        Text("Recipe unavailable").font(SL.display(19, .bold)).foregroundStyle(SL.text)
+                    }
+                    .frame(maxWidth: .infinity)
+                    Spacer()
                 }
             }
-        }
-        .task { await vm.observe() }
-        .sheet(isPresented: $showEdit) {
-            if let recipe = vm.recipe { RecipeEditView(sdk: sdk, recipe: recipe) }
-        }
-        .confirmationDialog("Delete this recipe?", isPresented: $confirmDelete, titleVisibility: .visible) {
-            Button("Delete", role: .destructive) {
-                Task { if await vm.delete() { dismiss() } }
+            .background(SLBackground())
+            .toolbar(.hidden, for: .navigationBar)
+            .task { await vm.observe() }
+            .sheet(isPresented: $showEdit) {
+                if let recipe = vm.recipe { RecipeEditView(sdk: sdk, recipe: recipe) }
+            }
+            .confirmationDialog("Delete this recipe?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                Button("Delete", role: .destructive) {
+                    Task { if await vm.delete() { dismiss() } }
+                }
             }
         }
     }
@@ -111,138 +114,233 @@ struct RecipeDetailView: View {
         )
     }
 
-    // MARK: - Sections
-
-    private func header(_ recipe: Recipe) -> some View {
-        VStack(alignment: .leading, spacing: CV.Spacing.sm) {
-            Text(recipe.title).font(.title.bold())
-            if let description = recipe.description_, !description.isEmpty {
-                Text(description).font(.subheadline).foregroundStyle(.secondary)
-            }
-            HStack(spacing: CV.Spacing.xl) {
-                if let cuisine = recipe.cuisine, !cuisine.isEmpty { metaItem("Cuisine", cuisine) }
-                if let prep = recipe.prepTime?.intValue { metaItem("Prep", "\(prep)m") }
-                if let cook = recipe.cookTime?.intValue { metaItem("Cook", "\(cook)m") }
-            }
-        }
-    }
-
-    private func metaItem(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label.uppercased()).font(.caption2).foregroundStyle(.secondary)
-            Text(value).font(.subheadline.weight(.medium))
-        }
-    }
-
-    private func servingsScaler(_ recipe: Recipe) -> some View {
-        CVCard {
-            HStack {
-                Text("Servings").font(.headline)
-                Spacer()
-                Stepper(value: $targetServings, in: 1...100) {
-                    Text("\(targetServings)").font(.title3.bold()).foregroundStyle(CV.primary)
-                }
-                .labelsHidden()
-                .fixedSize()
-                Text("\(targetServings)").font(.title3.bold()).foregroundStyle(CV.primary).monospacedDigit()
-            }
-        }
-    }
-
-    private var unitToggle: some View {
-        Picker("Units", selection: $unitSystem) {
-            Text("Metric").tag(MeasurementSystem.metric)
-            Text("Imperial").tag(MeasurementSystem.imperial)
-        }
-        .pickerStyle(.segmented)
-    }
-
-    private func ingredientsCard(_ recipe: Recipe) -> some View {
-        let scaledList = scaled(recipe)
-        return CVCard {
-            VStack(alignment: .leading, spacing: CV.Spacing.md) {
-                CVSectionHeader(title: "Ingredients")
-                ForEach(Array(scaledList.enumerated()), id: \.offset) { index, item in
-                    HStack(alignment: .top, spacing: CV.Spacing.md) {
-                        Text("\(formatQuantity(item.quantity)) \(item.unit)")
-                            .font(.subheadline.weight(.semibold).monospacedDigit())
-                            .frame(width: 96, alignment: .leading)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(item.name).font(.subheadline)
-                            if let notes = item.notes, !notes.isEmpty {
-                                Text(notes).font(.caption).italic().foregroundStyle(.secondary)
-                            }
-                        }
-                        Spacer()
-                        if let cost = lineCost(recipe.ingredients[index]) {
-                            Text(formatCurrency(amount: cost, currency: "USD"))
-                                .font(.caption.monospacedDigit())
-                                .foregroundStyle(CV.primary)
-                        }
-                    }
-                    if index < scaledList.count - 1 { Divider() }
-                }
-            }
-        }
-    }
-
     private func lineCost(_ ingredient: Ingredient) -> KotlinDouble? {
         calculateScaledCost(costPerUnit: ingredient.costPerUnit, scaledQuantity: ingredient.quantity * ratio)
     }
 
+    // MARK: - Back row + pinned control bar
+
+    private var backRow: some View {
+        HStack(spacing: 10) {
+            Button(action: { dismiss() }) {
+                HStack(spacing: 3) {
+                    Image(systemName: "chevron.left").font(.system(size: 13, weight: .semibold))
+                    Text("Recipes").font(SL.body(14, .semibold))
+                }
+                .foregroundStyle(SL.muted)
+            }
+            .buttonStyle(.plain)
+            Spacer(minLength: 0)
+            if let recipe = vm.recipe {
+                ShareLink(item: shareText(recipe)) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 15, weight: .semibold))
+                        .frame(width: 38, height: 38)
+                        .foregroundStyle(SL.text)
+                        .background(SL.surface, in: RoundedRectangle(cornerRadius: 12))
+                        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(SL.line2, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                Menu {
+                    Button { showEdit = true } label: { Label("Edit", systemImage: "pencil") }
+                    Button(role: .destructive) { confirmDelete = true } label: { Label("Delete", systemImage: "trash") }
+                } label: {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 15, weight: .semibold))
+                        .frame(width: 38, height: 38)
+                        .foregroundStyle(SL.onAccent)
+                        .background(SL.accent, in: RoundedRectangle(cornerRadius: 12))
+                }
+            }
+        }
+        .padding(.horizontal, SL.Pad.screen)
+        .padding(.top, 6)
+        .padding(.bottom, 12)
+    }
+
+    private func controlBar(_ recipe: Recipe) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(recipe.title)
+                .font(SL.display(23, .heavy))
+                .tracking(-0.6)
+                .lineSpacing(23 * 0.02)
+                .foregroundStyle(SL.text)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 10) {
+                SLStepper(value: $targetServings, range: 1...100)
+                Text("SERVINGS").font(SL.mono(10.5, .regular)).tracking(1).foregroundStyle(SL.faint)
+                Spacer(minLength: 0)
+                SLSegmented(selection: unitIndex, options: ["Metric", "Imperial"])
+                    .frame(width: 150)
+            }
+        }
+        .padding(.horizontal, SL.Pad.screen)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(SL.surface)
+        .overlay(SL.line.frame(height: 1), alignment: .bottom)
+        .shadow(color: .black.opacity(0.18), radius: 8, y: 4)
+    }
+
+    // MARK: - Meta grid
+
+    private func metaGrid(_ recipe: Recipe) -> some View {
+        HStack(spacing: 10) {
+            metaCard("Cuisine", recipe.cuisine?.nilIfBlank ?? "—")
+            metaCard("Prep", recipe.prepTime.map { "\($0.intValue)m" } ?? "—")
+            metaCard("Cook", recipe.cookTime.map { "\($0.intValue)m" } ?? "—")
+        }
+    }
+
+    private func metaCard(_ kicker: String, _ value: String) -> some View {
+        SLCard(pad: SL.Pad.card, soft: true) {
+            VStack(spacing: 6) {
+                SLKicker(kicker)
+                Text(value).font(SL.display(16, .bold)).foregroundStyle(SL.text).lineLimit(1)
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    // MARK: - Cost analysis
+
     private func costCard(_ recipe: Recipe) -> some View {
         let summary = calculateRecipeCost(ingredients: recipe.ingredients, servings: Int32(recipe.servings))
-        return Group {
-            if summary.totalCosted > 0 {
-                CVCard {
-                    VStack(alignment: .leading, spacing: CV.Spacing.md) {
-                        HStack {
-                            CVSectionHeader(title: "Cost Analysis")
-                            if !summary.isComplete {
-                                Text("Partial").font(.caption2.bold()).padding(.horizontal, 6).padding(.vertical, 2)
-                                    .background(Color.orange.opacity(0.2), in: Capsule()).foregroundStyle(.orange)
-                            }
-                        }
-                        HStack {
-                            costMetric("Total", formatCurrency(amount: KotlinDouble(double: summary.totalCosted), currency: "USD"))
-                            Spacer()
-                            costMetric("Per Serving", formatCurrency(amount: summary.costPerServing, currency: "USD"))
-                        }
+        let total = formatCurrency(amount: KotlinDouble(double: summary.totalCosted), currency: "USD")
+        let perServing = formatCurrency(amount: summary.costPerServing, currency: "USD")
+        return SLCard {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    SLKicker("Cost analysis")
+                    Text(total).font(SL.mono(24, .bold)).foregroundStyle(SL.accent)
+                    Text("\(perServing) / serving").font(SL.mono(11.5)).foregroundStyle(SL.muted)
+                }
+                Spacer(minLength: 0)
+                Text("\(summary.costedCount)/\(summary.totalCount) COSTED")
+                    .font(SL.mono(10, .bold))
+                    .foregroundStyle(SL.accent)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 5)
+                    .background(SL.accentSoft, in: Capsule())
+            }
+        }
+    }
+
+    // MARK: - Ingredients
+
+    private func ingredientsSection(_ recipe: Recipe) -> some View {
+        let scaledList = scaled(recipe)
+        return VStack(alignment: .leading, spacing: 10) {
+            SLKicker("Ingredients")
+            VStack(spacing: 0) {
+                ingredientHeader
+                ForEach(Array(scaledList.enumerated()), id: \.offset) { index, item in
+                    ingredientRow(item, cost: lineCost(recipe.ingredients[index]))
+                        .overlay(SL.line.frame(height: 1), alignment: .top)
+                }
+            }
+            .background(SL.surface, in: RoundedRectangle(cornerRadius: SL.R.md))
+            .overlay(RoundedRectangle(cornerRadius: SL.R.md).strokeBorder(SL.line, lineWidth: 1))
+            .clipShape(RoundedRectangle(cornerRadius: SL.R.md))
+        }
+    }
+
+    private var ingredientHeader: some View {
+        HStack(spacing: 0) {
+            Text("QTY").frame(width: 36, alignment: .leading)
+            Text("UNIT").frame(width: 40, alignment: .leading)
+            Text("INGREDIENT").frame(maxWidth: .infinity, alignment: .leading)
+            Text("COST").frame(width: 54, alignment: .trailing)
+        }
+        .font(SL.mono(9, .bold))
+        .tracking(0.8)
+        .foregroundStyle(SL.faint)
+        .padding(.horizontal, SL.Pad.card)
+        .padding(.vertical, 9)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(SL.surface2)
+    }
+
+    private func ingredientRow(_ item: ScaledIngredient, cost: KotlinDouble?) -> some View {
+        HStack(alignment: .top, spacing: 0) {
+            Text(formatQuantity(item.quantity))
+                .font(SL.mono(12, .bold)).foregroundStyle(SL.accent)
+                .frame(width: 36, alignment: .leading)
+            Text(item.unit)
+                .font(SL.mono(11)).foregroundStyle(SL.muted)
+                .frame(width: 40, alignment: .leading)
+            Group {
+                if let notes = item.notes, !notes.isEmpty {
+                    (Text(item.name).foregroundColor(SL.text)
+                        + Text(" · \(notes)").foregroundColor(SL.faint))
+                } else {
+                    Text(item.name).foregroundColor(SL.text)
+                }
+            }
+            .font(SL.body(13))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Text(cost.map { formatCurrency(amount: $0, currency: "USD") } ?? "—")
+                .font(SL.mono(11.5))
+                .foregroundStyle(cost == nil ? SL.faint : SL.text)
+                .frame(width: 54, alignment: .trailing)
+        }
+        .padding(.horizontal, SL.Pad.card)
+        .padding(.vertical, 11)
+    }
+
+    // MARK: - Method
+
+    private func methodSection(_ recipe: Recipe) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            SLKicker("Method")
+            ZStack(alignment: .topLeading) {
+                // timeline spine
+                SL.line2.frame(width: 2).padding(.leading, 13).padding(.vertical, 14)
+                VStack(alignment: .leading, spacing: 18) {
+                    ForEach(Array(recipe.steps.enumerated()), id: \.offset) { index, step in
+                        methodStep(index: index, step: step)
                     }
+                }
+            }
+            .padding(.leading, 30)
+        }
+    }
+
+    private func methodStep(index: Int, step: Step) -> some View {
+        HStack(alignment: .top, spacing: 0) {
+            Text("\(index + 1)")
+                .font(SL.mono(12, .bold))
+                .foregroundStyle(SL.onAccent)
+                .frame(width: 28, height: 28)
+                .background(SL.accent, in: Circle())
+                .offset(x: -30)
+                .frame(width: 0, alignment: .leading)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(step.instruction).font(SL.body(13)).lineSpacing(13 * 0.45).foregroundStyle(SL.text)
+                if let timer = step.timerSeconds?.intValue, timer > 0 {
+                    Text("⏱ \(timerLabel(timer))")
+                        .font(SL.mono(11)).foregroundStyle(SL.accent)
+                        .padding(.horizontal, 8).padding(.vertical, 4)
+                        .overlay(Capsule().strokeBorder(SL.accent.opacity(0.35), lineWidth: 1))
                 }
             }
         }
     }
 
-    private func costMetric(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label.uppercased()).font(.caption2).foregroundStyle(.secondary)
-            Text(value).font(.title3.bold()).foregroundStyle(CV.primary)
+    private func timerLabel(_ seconds: Int) -> String {
+        String(format: "%d:%02d", seconds / 60, seconds % 60)
+    }
+
+    // MARK: - Plating
+
+    private func platingSection(_ recipe: Recipe) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            SLKicker("Plating")
+            PlatingPhotosViewer(photos: recipe.platingPhotos)
         }
     }
 
-    private func methodCard(_ recipe: Recipe) -> some View {
-        CVCard {
-            VStack(alignment: .leading, spacing: CV.Spacing.lg) {
-                CVSectionHeader(title: "Method")
-                ForEach(Array(recipe.steps.enumerated()), id: \.offset) { index, step in
-                    HStack(alignment: .top, spacing: CV.Spacing.md) {
-                        Text("\(index + 1)")
-                            .font(.subheadline.bold())
-                            .frame(width: 28, height: 28)
-                            .background(CV.primaryTint, in: Circle())
-                            .foregroundStyle(CV.primary)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(step.instruction).font(.subheadline)
-                            if let timer = step.timerSeconds?.intValue, timer > 0 {
-                                Label("\(timer / 60)m", systemImage: "timer").font(.caption).foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    // MARK: - Share
 
     private func shareText(_ recipe: Recipe) -> String {
         var lines = ["\(recipe.title)", ""]
