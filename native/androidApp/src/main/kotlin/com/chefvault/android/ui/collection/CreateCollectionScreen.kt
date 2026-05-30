@@ -3,34 +3,23 @@ package com.chefvault.android.ui.collection
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,26 +32,28 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.chefvault.android.ui.common.SectionHeader
+import com.chefvault.android.ui.theme.LocalSl
+import com.chefvault.android.ui.theme.SlBackground
+import com.chefvault.android.ui.theme.SlButton
+import com.chefvault.android.ui.theme.SlDivider
+import com.chefvault.android.ui.theme.SlKicker
+import com.chefvault.android.ui.theme.SlTextField
+import com.chefvault.android.ui.theme.slBody
+import com.chefvault.android.ui.theme.slDisplay
 import com.chefvault.shared.data.ChefVaultSDK
 import com.chefvault.shared.data.repository.NewCollection
 import com.chefvault.shared.model.CollectionStatus
 import kotlinx.coroutines.launch
 
-private val PresetColors = listOf(
-    "#FF7A00", "#EF4444", "#22C55E", "#3B82F6",
-    "#A855F7", "#EC4899", "#F59E0B", "#14B8A6",
-)
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun CreateCollectionScreen(sdk: ChefVaultSDK, onDone: () -> Unit) {
+    val sl = LocalSl.current
     val scope = rememberCoroutineScope()
 
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var status by remember { mutableStateOf(CollectionStatus.ACTIVE) }
-    var color by remember { mutableStateOf(PresetColors.first()) }
+    var color by remember { mutableStateOf(CollectionPresetHexes.first()) }
     var busy by remember { mutableStateOf(false) }
 
     fun save() {
@@ -83,62 +74,112 @@ fun CreateCollectionScreen(sdk: ChefVaultSDK, onDone: () -> Unit) {
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("New Collection") },
-                navigationIcon = { IconButton(onClick = onDone) { Icon(Icons.Default.Close, "Cancel") } },
-                actions = { TextButton(onClick = { save() }, enabled = name.isNotBlank() && !busy) { Text("Save") } },
-            )
-        },
-    ) { padding ->
-        Column(
-            Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            // Live preview
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(96.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(collectionColor(color)),
-                contentAlignment = Alignment.BottomStart,
-            ) {
+    SlBackground {
+        Column(Modifier.fillMaxSize()) {
+            // Header: Cancel + centered title (mirrors iOS sheetHeader)
+            Box(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 18.dp)) {
                 Text(
-                    name.ifBlank { "Collection name" },
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(16.dp),
+                    "Cancel",
+                    style = slBody(14.5),
+                    color = sl.muted,
+                    modifier = Modifier.align(Alignment.CenterStart).clickable { onDone() },
+                )
+                Text(
+                    "New Collection",
+                    style = slDisplay(16.0, FontWeight.Bold),
+                    color = sl.text,
+                    modifier = Modifier.align(Alignment.Center),
                 )
             }
+            SlDivider()
 
-            OutlinedTextField(name, { name = it }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(description, { description = it }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth())
-
-            SectionHeader("Status")
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                SegmentedButton(selected = status == CollectionStatus.ACTIVE, onClick = { status = CollectionStatus.ACTIVE }, shape = SegmentedButtonDefaults.itemShape(0, 2)) { Text("Active") }
-                SegmentedButton(selected = status == CollectionStatus.DRAFT, onClick = { status = CollectionStatus.DRAFT }, shape = SegmentedButtonDefaults.itemShape(1, 2)) { Text("Draft") }
-            }
-
-            SectionHeader("Color")
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                PresetColors.forEach { hex ->
-                    val selected = hex == color
-                    Box(
-                        Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(collectionColor(hex))
-                            .then(
-                                if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
-                                else Modifier,
-                            )
-                            .clickable { color = hex },
-                    )
+            Column(
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(18.dp).padding(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp),
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                    SlKicker("Name")
+                    SlTextField(value = name, onValueChange = { name = it }, placeholder = "Collection name")
                 }
+                Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                    SlKicker("Description")
+                    SlTextField(value = description, onValueChange = { description = it }, placeholder = "Optional description")
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                    SlKicker("Status")
+                    StatusSegmented(status) { status = it }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SlKicker("Cover")
+                    Row(
+                        Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(9.dp),
+                    ) {
+                        CollectionPresetHexes.forEach { hex ->
+                            ColorSwatch(hex = hex, selected = hex == color) { color = hex }
+                        }
+                    }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SlKicker("Preview")
+                    PreviewCard(name = name.ifBlank { "Collection name" }, colorHex = color, status = status)
+                }
+                SlButton(
+                    label = "Create Collection",
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = name.isNotBlank() && !busy,
+                ) { save() }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ColorSwatch(hex: String, selected: Boolean, onClick: () -> Unit) {
+    val sl = LocalSl.current
+    Box(
+        Modifier
+            .size(48.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(collectionColor(hex))
+            .border(
+                if (selected) 2.dp else 1.dp,
+                if (selected) sl.accent else sl.line2,
+                RoundedCornerShape(12.dp),
+            )
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center,
+    ) {
+        if (selected) {
+            Icon(Icons.Filled.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+        }
+    }
+}
+
+/** Compact hero preview mirroring the collection detail hero look. */
+@Composable
+private fun PreviewCard(name: String, colorHex: String, status: CollectionStatus) {
+    val sl = LocalSl.current
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .border(1.dp, sl.line, RoundedCornerShape(16.dp)),
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(96.dp)
+                .background(collectionColor(colorHex)),
+            contentAlignment = Alignment.BottomStart,
+        ) {
+            Row(
+                Modifier.fillMaxWidth().padding(14.dp),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(name, style = slDisplay(18.0, FontWeight.ExtraBold), color = Color.White, maxLines = 1)
+                SlCollectionStatusPill(status)
             }
         }
     }

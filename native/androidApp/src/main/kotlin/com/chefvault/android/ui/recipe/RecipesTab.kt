@@ -1,29 +1,27 @@
 package com.chefvault.android.ui.recipe
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +36,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.chefvault.android.ui.theme.LocalSl
+import com.chefvault.android.ui.theme.SlAppBar
+import com.chefvault.android.ui.theme.SlBackground
+import com.chefvault.android.ui.theme.SlCard
+import com.chefvault.android.ui.theme.SlChip
+import com.chefvault.android.ui.theme.SlFab
+import com.chefvault.android.ui.theme.SlIconButton
+import com.chefvault.android.ui.theme.SlSearchField
+import com.chefvault.android.ui.theme.SlTile
+import com.chefvault.android.ui.theme.slBody
+import com.chefvault.android.ui.theme.slDisplay
+import com.chefvault.android.ui.theme.slMono
 import com.chefvault.shared.costing.calculateRecipeCost
 import com.chefvault.shared.costing.formatCurrency
 import com.chefvault.shared.data.ChefVaultSDK
@@ -65,46 +75,115 @@ fun RecipesTab(sdk: ChefVaultSDK) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RecipeLibraryScreen(sdk: ChefVaultSDK, onOpen: (String) -> Unit, onCreate: () -> Unit) {
     val recipes by sdk.recipes.recipes.collectAsStateWithLifecycle()
     var query by remember { mutableStateOf("") }
+    var cuisine by remember { mutableStateOf<String?>(null) }
 
-    val filtered = remember(recipes, query) {
-        if (query.isBlank()) recipes
-        else recipes.filter {
-            it.title.contains(query, ignoreCase = true) || (it.cuisine?.contains(query, ignoreCase = true) == true)
+    val cuisines = remember(recipes) {
+        recipes.mapNotNull { it.cuisine?.takeIf { c -> c.isNotBlank() } }.distinct().sorted()
+    }
+    val filtered = remember(recipes, query, cuisine) {
+        recipes.filter { r ->
+            (cuisine == null || r.cuisine == cuisine) &&
+                (query.isBlank() ||
+                    r.title.contains(query, ignoreCase = true) ||
+                    (r.cuisine?.contains(query, ignoreCase = true) == true))
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Recipes") },
-                actions = { IconButton(onClick = onCreate) { Icon(Icons.Default.Add, contentDescription = "New recipe") } },
-            )
-        },
-    ) { padding ->
-        Column(Modifier.padding(padding).fillMaxSize()) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                placeholder = { Text("Search recipes") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            )
-            if (recipes.isEmpty()) {
-                Box(Modifier.fillMaxSize(), Alignment.Center) {
-                    Text("No recipes yet — tap + to create one", color = MaterialTheme.colorScheme.onSurfaceVariant)
+    SlBackground {
+        Column(Modifier.fillMaxSize()) {
+            SlAppBar(title = "Recipes", kicker = "Mise en place", count = "${recipes.size}") {
+                SlIconButton(Icons.Filled.Tune) {}
+            }
+            LazyColumn(
+                contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 4.dp, bottom = 96.dp),
+                verticalArrangement = Arrangement.spacedBy(11.dp),
+            ) {
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        SlSearchField(value = query, onValueChange = { query = it })
+                        Row(
+                            Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            SlChip(label = "All", active = cuisine == null) { cuisine = null }
+                            cuisines.forEach { c ->
+                                SlChip(label = c, active = cuisine == c) { cuisine = if (cuisine == c) null else c }
+                            }
+                        }
+                    }
                 }
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
+                if (recipes.isEmpty()) {
+                    item { EmptyState() }
+                } else {
                     items(filtered, key = { it.id }) { recipe ->
-                        RecipeRow(recipe) { onOpen(recipe.id) }
+                        SlRecipeRow(recipe) { onOpen(recipe.id) }
+                    }
+                }
+            }
+        }
+        // SlBackground gives a BoxScope; float the create button above the SL tab bar.
+        Box(Modifier.align(Alignment.BottomEnd).padding(end = 18.dp, bottom = 88.dp)) {
+            SlFab(onClick = onCreate)
+        }
+    }
+}
+
+@Composable
+private fun EmptyState() {
+    val sl = LocalSl.current
+    Column(
+        Modifier.fillMaxWidth().padding(top = 60.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Box(
+            Modifier.size(70.dp).clip(RoundedCornerShape(18.dp)).border(2.dp, sl.line2, RoundedCornerShape(18.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Outlined.Restaurant, contentDescription = null, tint = sl.accent, modifier = Modifier.size(26.dp))
+        }
+        Text("No recipes yet", style = slDisplay(19.0, FontWeight.Bold), color = sl.text)
+        Text("Tap + to create your first recipe", style = slBody(13.0), color = sl.muted)
+    }
+}
+
+/** Library card row — color-hashed tile, title, meta line, ember cost + updated stamp. */
+@Composable
+private fun SlRecipeRow(recipe: Recipe, onClick: () -> Unit) {
+    val sl = LocalSl.current
+    val tone = remember(recipe.title) { recipe.title.sumOf { it.code } % 4 }
+    val costText = remember(recipe.ingredients, recipe.servings) {
+        val s = calculateRecipeCost(recipe.ingredients, recipe.servings)
+        if (s.totalCosted > 0) formatCurrency(s.totalCosted, "USD") else null
+    }
+    val meta = remember(recipe) {
+        buildList {
+            recipe.cuisine?.takeIf { it.isNotBlank() }?.let { add(it) }
+            add("${recipe.servings} servings")
+            val cook = recipe.cookTime ?: 0
+            val prep = recipe.prepTime ?: 0
+            if (cook > 0) add("$cook min") else if (prep > 0) add("$prep min")
+        }.joinToString(" · ")
+    }
+    val upd = remember(recipe.updatedAt) { shortRelative(recipe.updatedAt) }
+
+    SlCard(modifier = Modifier.clickable { onClick() }, padding = 11) {
+        Row(horizontalArrangement = Arrangement.spacedBy(13.dp), verticalAlignment = Alignment.CenterVertically) {
+            SlTile(letter = recipe.title.take(1).uppercase(), tone = tone, sizeDp = 60)
+            Column(verticalArrangement = Arrangement.spacedBy(5.dp), modifier = Modifier.weight(1f)) {
+                Text(recipe.title, style = slDisplay(15.5, FontWeight.Bold), color = sl.text, maxLines = 2)
+                Text(meta, style = slBody(11.5), color = sl.muted, maxLines = 1)
+                Row(Modifier.fillMaxWidth().padding(top = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (costText != null) {
+                        Text(costText, style = slMono(14.0, FontWeight.Bold), color = sl.accent)
+                    }
+                    Box(Modifier.weight(1f))
+                    if (upd != null) {
+                        Text("UPD $upd", style = slMono(10.0), color = sl.faint)
                     }
                 }
             }
@@ -112,29 +191,15 @@ private fun RecipeLibraryScreen(sdk: ChefVaultSDK, onOpen: (String) -> Unit, onC
     }
 }
 
-@Composable
-private fun RecipeRow(recipe: Recipe, onClick: () -> Unit) {
-    val costText = remember(recipe.ingredients, recipe.servings) {
-        val summary = calculateRecipeCost(recipe.ingredients, recipe.servings)
-        if (summary.totalCosted > 0) formatCurrency(summary.totalCosted, "USD") else null
-    }
-    Surface(onClick = onClick, color = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(12.dp)) {
-        Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier.size(56.dp).clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(recipe.title.take(1).uppercase(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-            }
-            Column(Modifier.weight(1f)) {
-                Text(recipe.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                val meta = buildList {
-                    recipe.cuisine?.takeIf { it.isNotBlank() }?.let { add(it) }
-                    add("${recipe.servings} serv")
-                    costText?.let { add(it) }
-                }.joinToString(" · ")
-                Text(meta, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
+/** Best-effort "2d" / "3h" / "now" from an ISO-8601 timestamp; null if unparseable. */
+private fun shortRelative(iso: String): String? {
+    val instant = runCatching { java.time.Instant.parse(iso) }
+        .recoverCatching { java.time.OffsetDateTime.parse(iso).toInstant() }
+        .getOrNull() ?: return null
+    val seconds = (java.time.Duration.between(instant, java.time.Instant.now()).seconds).coerceAtLeast(0)
+    return when {
+        seconds < 3600 -> "now"
+        seconds < 86_400 -> "${seconds / 3600}h"
+        else -> "${seconds / 86_400}d"
     }
 }

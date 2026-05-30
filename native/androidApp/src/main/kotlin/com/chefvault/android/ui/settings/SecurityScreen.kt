@@ -5,25 +5,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,19 +17,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.chefvault.android.ui.common.CvCard
-import com.chefvault.android.ui.common.SectionHeader
+import com.chefvault.android.ui.theme.LocalSl
+import com.chefvault.android.ui.theme.SlBackground
+import com.chefvault.android.ui.theme.SlButton
+import com.chefvault.android.ui.theme.SlKicker
+import com.chefvault.android.ui.theme.SlSubHeader
+import com.chefvault.android.ui.theme.SlTextField
+import com.chefvault.android.ui.theme.SlVariant
+import com.chefvault.android.ui.theme.slBody
 import com.chefvault.shared.data.ChefVaultSDK
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SecurityScreen(sdk: ChefVaultSDK, onBack: () -> Unit) {
+    val sl = LocalSl.current
     val scope = rememberCoroutineScope()
 
+    var currentPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
@@ -51,18 +43,18 @@ fun SecurityScreen(sdk: ChefVaultSDK, onBack: () -> Unit) {
     var success by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
 
+    val passwordsMismatch = confirmPassword.isNotEmpty() && newPassword != confirmPassword
+    val canSubmit = currentPassword.isNotEmpty() && newPassword.length >= 8 && newPassword == confirmPassword && !busy
+
     fun changePassword() {
         error = null
         success = false
-        when {
-            newPassword.length < 8 -> { error = "Password must be at least 8 characters."; return }
-            newPassword != confirmPassword -> { error = "Passwords don't match."; return }
-        }
         busy = true
         scope.launch {
             try {
                 sdk.auth.updatePassword(newPassword)
                 success = true
+                currentPassword = ""
                 newPassword = ""
                 confirmPassword = ""
             } catch (e: Exception) {
@@ -73,52 +65,49 @@ fun SecurityScreen(sdk: ChefVaultSDK, onBack: () -> Unit) {
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Security") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
-            )
-        },
-    ) { padding ->
-        Column(
-            Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            CvCard {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SectionHeader("Change Password")
-                    OutlinedTextField(
-                        newPassword, { newPassword = it }, label = { Text("New password") },
-                        singleLine = true, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth(),
+    SlBackground {
+        Column(Modifier.fillMaxSize()) {
+            SlSubHeader(title = "Security", onBack = onBack)
+            Column(
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                    .padding(horizontal = 18.dp).padding(top = 16.dp, bottom = 40.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                SlKicker("Change password", modifier = Modifier.padding(start = 4.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    SlTextField(
+                        value = currentPassword, onValueChange = { currentPassword = it },
+                        placeholder = "Current password", secure = true, keyboard = KeyboardType.Password,
                     )
-                    OutlinedTextField(
-                        confirmPassword, { confirmPassword = it }, label = { Text("Confirm new password") },
-                        singleLine = true, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth(),
+                    SlTextField(
+                        value = newPassword, onValueChange = { newPassword = it },
+                        placeholder = "New password", secure = true, keyboard = KeyboardType.Password,
                     )
-                    error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
-                    if (success) Text("Password updated.", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
-                    Button(
-                        onClick = { changePassword() },
-                        enabled = newPassword.isNotBlank() && confirmPassword.isNotBlank() && !busy,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        if (busy) CircularProgressIndicator(Modifier.size(20.dp), color = MaterialTheme.colorScheme.onPrimary)
-                        else Text("Update Password", fontWeight = FontWeight.SemiBold)
+                    PasswordStrengthBar(newPassword)
+                    SlTextField(
+                        value = confirmPassword, onValueChange = { confirmPassword = it },
+                        placeholder = "Confirm new password", secure = true, keyboard = KeyboardType.Password,
+                    )
+                    if (passwordsMismatch) {
+                        Text("Passwords do not match.", style = slBody(12.0), color = sl.danger)
                     }
-                }
-            }
-
-            CvCard {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SectionHeader("Danger Zone")
-                    Text("Deleting your account is permanent and removes all recipes, collections and prep lists.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    OutlinedButton(
-                        onClick = { confirmDelete = true },
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    SlButton(
+                        label = if (busy) "Updating…" else "Update password",
+                        enabled = canSubmit,
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text("Delete Account") }
+                    ) { changePassword() }
+                    if (success) Text("Password updated.", style = slBody(12.0), color = sl.good)
+                    error?.let { Text(it, style = slBody(12.0), color = sl.danger) }
                 }
+
+                SlKicker("Danger zone", modifier = Modifier.padding(start = 4.dp, top = 8.dp))
+                SlButton(label = "Delete account…", variant = SlVariant.Danger, modifier = Modifier.fillMaxWidth()) {
+                    confirmDelete = true
+                }
+                Text(
+                    "This cascades all recipes, collections, prep lists, photos and your login. It cannot be undone.",
+                    style = slBody(12.0), color = sl.muted, modifier = Modifier.padding(start = 4.dp),
+                )
             }
         }
     }
@@ -127,12 +116,12 @@ fun SecurityScreen(sdk: ChefVaultSDK, onBack: () -> Unit) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             title = { Text("Delete account?") },
-            text = { Text("This permanently deletes your account and all data. This cannot be undone.") },
+            text = { Text("This permanently removes all your data and cannot be undone.") },
             confirmButton = {
                 TextButton(onClick = {
                     confirmDelete = false
                     scope.launch { runCatching { sdk.auth.deleteAccount() } }
-                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                }) { Text("Delete account") }
             },
             dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
         )
