@@ -38,7 +38,10 @@ internal fun createChefVaultSupabaseClient(config: SupabaseConfig): SupabaseClie
                 encodeDefaults = true
             },
         )
-        install(Auth)
+        install(Auth) {
+            // Persist the session in the platform secure store (Keychain on iOS).
+            platformSessionManager()?.let { sessionManager = it }
+        }
         install(Postgrest)
         install(Storage)
     }

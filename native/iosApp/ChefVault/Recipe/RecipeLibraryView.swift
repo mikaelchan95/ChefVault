@@ -3,14 +3,12 @@ import ChefVaultShared
 
 struct RecipeLibraryView: View {
     let sdk: ChefVaultSDK
-    let auth: AuthViewModel
     @State private var vm: RecipeListViewModel
     @State private var query = ""
     @State private var showCreate = false
 
-    init(sdk: ChefVaultSDK, auth: AuthViewModel) {
+    init(sdk: ChefVaultSDK) {
         self.sdk = sdk
-        self.auth = auth
         _vm = State(initialValue: RecipeListViewModel(repo: sdk.recipes))
     }
 
@@ -33,17 +31,23 @@ struct RecipeLibraryView: View {
                     )
                 } else {
                     List(filtered, id: \.id) { recipe in
-                        RecipeRowView(recipe: recipe)
+                        NavigationLink(value: recipe.id) {
+                            RecipeRowView(recipe: recipe)
+                        }
                     }
                     .listStyle(.plain)
                     .searchable(text: $query, prompt: "Search recipes")
                 }
             }
             .navigationTitle("Recipes")
+            .navigationDestination(for: String.self) { recipeId in
+                RecipeDetailView(
+                    sdk: sdk,
+                    recipeId: recipeId,
+                    baseServings: Int(vm.recipes.first { $0.id == recipeId }?.servings ?? 1),
+                )
+            }
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Sign Out", role: .destructive) { Task { await auth.signOut() } }
-                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showCreate = true } label: { Image(systemName: "plus") }
                 }
@@ -52,7 +56,7 @@ struct RecipeLibraryView: View {
             .task { await vm.observe() }
             .task { await vm.refresh() }
             .sheet(isPresented: $showCreate) {
-                CreateRecipeView(vm: vm)
+                CreateRecipeView(sdk: sdk)
             }
         }
     }
@@ -62,7 +66,7 @@ struct RecipeRowView: View {
     let recipe: Recipe
 
     private var costText: String? {
-        let summary = calculateRecipeCost(ingredients: recipe.ingredients, servings: recipe.servings)
+        let summary = calculateRecipeCost(ingredients: recipe.ingredients, servings: Int32(recipe.servings))
         guard summary.totalCosted > 0 else { return nil }
         return formatCurrency(amount: KotlinDouble(double: summary.totalCosted), currency: "USD")
     }

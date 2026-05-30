@@ -1,3 +1,4 @@
+import AuthenticationServices
 import SwiftUI
 import ChefVaultShared
 
@@ -59,6 +60,27 @@ final class AuthViewModel {
 
     func signOut() async {
         await run { try await self.auth.signOut() }
+    }
+
+    func signInWithApple(idToken: String, nonce: String) async {
+        await run { try await self.auth.signInWithIdToken(provider: .apple, idToken: idToken, nonce: nonce) }
+    }
+
+    func signInWithGoogle() async {
+        errorMessage = nil
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            let urlString = try await auth.oAuthUrl(provider: .google, redirectUrl: "chefvault://auth-callback")
+            guard let url = URL(string: urlString) else { return }
+            let callback = try await startWebAuth(url: url, callbackScheme: "chefvault")
+            try await auth.completeOAuth(callbackUrl: callback.absoluteString)
+        } catch {
+            // Swallow user-initiated cancellation; surface everything else.
+            if (error as? ASWebAuthenticationSessionError)?.code != .canceledLogin {
+                errorMessage = userMessage(error)
+            }
+        }
     }
 
     private func run(_ op: @escaping () async throws -> Void) async {

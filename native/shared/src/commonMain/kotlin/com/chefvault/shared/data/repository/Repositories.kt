@@ -64,6 +64,8 @@ data class NewRecipe(
     val prepTime: Int? = null,
     val cookTime: Int? = null,
     val description: String? = null,
+    val imageUrl: String? = null,
+    val platingPhotos: List<String> = emptyList(),
     val ingredients: List<NewIngredient> = emptyList(),
     val steps: List<NewStep> = emptyList(),
 )

@@ -72,6 +72,8 @@ data class RecipeUpdate(
     val prepTime: Int? = null,
     val cookTime: Int? = null,
     val description: String? = null,
+    val imageUrl: String? = null,
+    val platingPhotos: List<String> = emptyList(),
 )
 
 @Serializable

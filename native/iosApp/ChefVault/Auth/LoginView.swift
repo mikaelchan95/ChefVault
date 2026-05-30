@@ -28,6 +28,8 @@ struct LoginView: View {
                     Task { await auth.signIn(email: email, password: password) }
                 }
 
+                SocialSignInButtons(auth: auth)
+
                 NavigationLink("Forgot Password?") { ForgotPasswordView(auth: auth) }
                     .font(.subheadline)
                     .tint(CV.primary)

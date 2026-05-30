@@ -48,6 +48,8 @@ class SupabaseRecipeRepository(
                     prepTime = form.prepTime,
                     cookTime = form.cookTime,
                     description = form.description,
+                    imageUrl = form.imageUrl,
+                    platingPhotos = form.platingPhotos,
                 ),
             ) { select() }
             .decodeSingle<RecipeRow>()
@@ -97,6 +99,8 @@ class SupabaseRecipeRepository(
                     prepTime = form.prepTime,
                     cookTime = form.cookTime,
                     description = form.description,
+                    imageUrl = form.imageUrl,
+                    platingPhotos = form.platingPhotos,
                 ),
             ) { filter { eq("id", id) } }
 

@@ -34,9 +34,11 @@ kotlin {
             implementation(kotlin("test"))
         }
         // Ktor Darwin engine for all Apple targets (iOS + macOS host-test). supabase-kt
-        // needs a platform HTTP engine supplied explicitly.
+        // needs a platform HTTP engine supplied explicitly. multiplatform-settings backs
+        // the Keychain session store on Apple.
         appleMain.dependencies {
             implementation(libs.ktor.client.darwin)
+            implementation(libs.multiplatform.settings)
         }
     }
 }
