@@ -7,6 +7,20 @@ struct RecipeLibraryView: View {
     @State private var query = ""
     @State private var cuisine: String? = nil
     @State private var showCreate = false
+    @State private var showSort = false
+    @State private var sortBy: RecipeSort = .updated
+
+    enum RecipeSort: String, CaseIterable, Identifiable {
+        case updated, name, cost
+        var id: String { rawValue }
+        var label: String {
+            switch self {
+            case .updated: return "Recently updated"
+            case .name: return "Name A–Z"
+            case .cost: return "Highest cost"
+            }
+        }
+    }
 
     init(sdk: ChefVaultSDK) {
         self.sdk = sdk
@@ -17,12 +31,24 @@ struct RecipeLibraryView: View {
         Array(Set(vm.recipes.compactMap { $0.cuisine?.nilIfBlank })).sorted()
     }
 
+    private func recipeCost(_ r: Recipe) -> Double {
+        calculateRecipeCost(ingredients: r.ingredients, servings: Int32(r.servings)).totalCosted
+    }
+
     private var filtered: [Recipe] {
-        vm.recipes.filter { r in
+        let base = vm.recipes.filter { r in
             (cuisine == nil || r.cuisine == cuisine)
                 && (query.isEmpty
                     || r.title.localizedCaseInsensitiveContains(query)
                     || (r.cuisine?.localizedCaseInsensitiveContains(query) ?? false))
+        }
+        switch sortBy {
+        case .updated:
+            return base.sorted { ($0.updatedAt.isoDate ?? .distantPast) > ($1.updatedAt.isoDate ?? .distantPast) }
+        case .name:
+            return base.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+        case .cost:
+            return base.sorted { recipeCost($0) > recipeCost($1) }
         }
     }
 
@@ -30,7 +56,7 @@ struct RecipeLibraryView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 SLAppBar(title: "Recipes", kicker: "Mise en place", count: "\(vm.recipes.count)") {
-                    SLIconBtn(systemName: "slider.horizontal.3")
+                    SLIconBtn(systemName: "slider.horizontal.3", accent: sortBy != .updated) { showSort = true }
                 }
                 ScrollView {
                     VStack(spacing: 12) {
@@ -72,7 +98,46 @@ struct RecipeLibraryView: View {
             .task { await vm.refresh() }
             .refreshable { await vm.refresh() }
             .sheet(isPresented: $showCreate) { CreateRecipeView(sdk: sdk) }
+            .sheet(isPresented: $showSort) { sortSheet }
         }
+    }
+
+    private var sortSheet: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            SLKicker("Sort by")
+                .padding(.horizontal, SL.Pad.screen)
+                .padding(.top, 22)
+                .padding(.bottom, 6)
+            ForEach(RecipeSort.allCases) { opt in
+                Button {
+                    sortBy = opt
+                    showSort = false
+                } label: {
+                    HStack {
+                        Text(opt.label)
+                            .font(SL.body(15.5, sortBy == opt ? .semibold : .regular))
+                            .foregroundStyle(sortBy == opt ? SL.text : SL.muted)
+                        Spacer()
+                        if sortBy == opt {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundStyle(SL.accent)
+                        }
+                    }
+                    .padding(.horizontal, SL.Pad.screen)
+                    .padding(.vertical, 15)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                if opt != .cost { Divider().overlay(SL.line).padding(.leading, SL.Pad.screen) }
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(SLBackground())
+        .presentationDetents([.height(250)])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(SL.bg)
     }
 
     private var emptyState: some View {
@@ -139,12 +204,15 @@ struct SLRecipeRow: View {
 
 extension String {
     var nilIfBlank: String? { trimmingCharacters(in: .whitespaces).isEmpty ? nil : self }
-    /// Best-effort "2d" / "3h" / "now" from an ISO-8601 timestamp; nil if unparseable.
-    var shortRelative: String? {
+    /// Parses an ISO-8601 timestamp (with or without fractional seconds); nil if unparseable.
+    var isoDate: Date? {
         let iso = ISO8601DateFormatter()
         iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let date = iso.date(from: self) ?? ISO8601DateFormatter().date(from: self)
-        guard let date else { return nil }
+        return iso.date(from: self) ?? ISO8601DateFormatter().date(from: self)
+    }
+    /// Best-effort "2d" / "3h" / "now" from an ISO-8601 timestamp; nil if unparseable.
+    var shortRelative: String? {
+        guard let date = isoDate else { return nil }
         let s = max(0, -date.timeIntervalSinceNow)
         if s < 3600 { return "now" }
         if s < 86_400 { return "\(Int(s / 3600))h" }

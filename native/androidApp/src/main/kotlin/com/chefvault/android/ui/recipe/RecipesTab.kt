@@ -18,10 +18,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.outlined.Restaurant
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +47,7 @@ import com.chefvault.android.ui.theme.SlCard
 import com.chefvault.android.ui.theme.SlChip
 import com.chefvault.android.ui.theme.SlFab
 import com.chefvault.android.ui.theme.SlIconButton
+import com.chefvault.android.ui.theme.SlKicker
 import com.chefvault.android.ui.theme.SlSearchField
 import com.chefvault.android.ui.theme.SlTile
 import com.chefvault.android.ui.theme.slBody
@@ -80,23 +85,30 @@ private fun RecipeLibraryScreen(sdk: ChefVaultSDK, onOpen: (String) -> Unit, onC
     val recipes by sdk.recipes.recipes.collectAsStateWithLifecycle()
     var query by remember { mutableStateOf("") }
     var cuisine by remember { mutableStateOf<String?>(null) }
+    var sortBy by remember { mutableStateOf(RecipeSort.UPDATED) }
+    var showSort by remember { mutableStateOf(false) }
 
     val cuisines = remember(recipes) {
         recipes.mapNotNull { it.cuisine?.takeIf { c -> c.isNotBlank() } }.distinct().sorted()
     }
-    val filtered = remember(recipes, query, cuisine) {
-        recipes.filter { r ->
+    val filtered = remember(recipes, query, cuisine, sortBy) {
+        val base = recipes.filter { r ->
             (cuisine == null || r.cuisine == cuisine) &&
                 (query.isBlank() ||
                     r.title.contains(query, ignoreCase = true) ||
                     (r.cuisine?.contains(query, ignoreCase = true) == true))
+        }
+        when (sortBy) {
+            RecipeSort.UPDATED -> base.sortedByDescending { parseInstant(it.updatedAt) ?: java.time.Instant.MIN }
+            RecipeSort.NAME -> base.sortedBy { it.title.lowercase() }
+            RecipeSort.COST -> base.sortedByDescending { calculateRecipeCost(it.ingredients, it.servings).totalCosted }
         }
     }
 
     SlBackground {
         Column(Modifier.fillMaxSize()) {
             SlAppBar(title = "Recipes", kicker = "Mise en place", count = "${recipes.size}") {
-                SlIconButton(Icons.Filled.Tune) {}
+                SlIconButton(Icons.Filled.Tune, accent = sortBy != RecipeSort.UPDATED) { showSort = true }
             }
             LazyColumn(
                 contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 4.dp, bottom = 96.dp),
@@ -129,6 +141,9 @@ private fun RecipeLibraryScreen(sdk: ChefVaultSDK, onOpen: (String) -> Unit, onC
         Box(Modifier.align(Alignment.BottomEnd).padding(end = 18.dp, bottom = 88.dp)) {
             SlFab(onClick = onCreate)
         }
+    }
+    if (showSort) {
+        SortSheet(current = sortBy, onPick = { sortBy = it; showSort = false }, onDismiss = { showSort = false })
     }
 }
 
@@ -191,15 +206,54 @@ private fun SlRecipeRow(recipe: Recipe, onClick: () -> Unit) {
     }
 }
 
+private enum class RecipeSort(val label: String) {
+    UPDATED("Recently updated"),
+    NAME("Name A–Z"),
+    COST("Highest cost"),
+}
+
+/** Parses an ISO-8601 timestamp (instant or offset form); null if unparseable. */
+private fun parseInstant(iso: String): java.time.Instant? =
+    runCatching { java.time.Instant.parse(iso) }
+        .recoverCatching { java.time.OffsetDateTime.parse(iso).toInstant() }
+        .getOrNull()
+
 /** Best-effort "2d" / "3h" / "now" from an ISO-8601 timestamp; null if unparseable. */
 private fun shortRelative(iso: String): String? {
-    val instant = runCatching { java.time.Instant.parse(iso) }
-        .recoverCatching { java.time.OffsetDateTime.parse(iso).toInstant() }
-        .getOrNull() ?: return null
+    val instant = parseInstant(iso) ?: return null
     val seconds = (java.time.Duration.between(instant, java.time.Instant.now()).seconds).coerceAtLeast(0)
     return when {
         seconds < 3600 -> "now"
         seconds < 86_400 -> "${seconds / 3600}h"
         else -> "${seconds / 86_400}d"
+    }
+}
+
+/** Service Line sort picker — mirrors the iOS sort sheet. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SortSheet(current: RecipeSort, onPick: (RecipeSort) -> Unit, onDismiss: () -> Unit) {
+    val sl = LocalSl.current
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = sl.bg) {
+        Column(Modifier.fillMaxWidth().padding(bottom = 32.dp)) {
+            SlKicker("Sort by", modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp))
+            RecipeSort.entries.forEach { opt ->
+                Row(
+                    Modifier.fillMaxWidth().clickable { onPick(opt) }.padding(horizontal = 18.dp, vertical = 15.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        opt.label,
+                        style = slBody(15.5, if (opt == current) FontWeight.SemiBold else FontWeight.Normal),
+                        color = if (opt == current) sl.text else sl.muted,
+                    )
+                    Box(Modifier.weight(1f))
+                    if (opt == current) {
+                        Icon(Icons.Filled.Check, contentDescription = null, tint = sl.accent, modifier = Modifier.size(20.dp))
+                    }
+                }
+            }
+        }
     }
 }
