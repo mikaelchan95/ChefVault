@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.launch
 import com.chefvault.android.ui.auth.AuthFlow
 import com.chefvault.android.ui.collection.CollectionsTab
 import com.chefvault.android.ui.common.BusyIndicator
@@ -54,10 +55,11 @@ private fun MainScaffold(sdk: ChefVaultSDK) {
     var tab by remember { mutableStateOf(Tab.Recipes) }
 
     LaunchedEffect(Unit) {
-        runCatching { sdk.recipes.refresh() }
-        runCatching { sdk.collections.refresh() }
-        runCatching { sdk.prepLists.refresh() }
-        runCatching { sdk.profile.refresh() }
+        // Independent network round-trips — run concurrently (matches the iOS MainTabView).
+        launch { runCatching { sdk.recipes.refresh() } }
+        launch { runCatching { sdk.collections.refresh() } }
+        launch { runCatching { sdk.prepLists.refresh() } }
+        launch { runCatching { sdk.profile.refresh() } }
     }
 
     Scaffold(

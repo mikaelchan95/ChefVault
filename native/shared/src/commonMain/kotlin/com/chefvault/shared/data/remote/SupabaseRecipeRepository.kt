@@ -55,35 +55,7 @@ class SupabaseRecipeRepository(
             .decodeSingle<RecipeRow>()
 
         val recipeId = inserted.id
-
-        if (form.ingredients.isNotEmpty()) {
-            client.from("ingredients").insert(
-                form.ingredients.mapIndexed { index, ing ->
-                    IngredientInsert(
-                        recipeId = recipeId,
-                        name = ing.name,
-                        quantity = ing.quantity,
-                        unit = ing.unit,
-                        notes = ing.notes,
-                        costPerUnit = ing.costPerUnit,
-                        sortOrder = index,
-                    )
-                },
-            )
-        }
-
-        if (form.steps.isNotEmpty()) {
-            client.from("steps").insert(
-                form.steps.mapIndexed { index, step ->
-                    StepInsert(
-                        recipeId = recipeId,
-                        stepNumber = index + 1,
-                        instruction = step.instruction,
-                        timerSeconds = step.timerSeconds,
-                    )
-                },
-            )
-        }
+        insertIngredientsAndSteps(recipeId, form)
 
         refresh()
         return _recipes.value.firstOrNull { it.id == recipeId } ?: inserted.toDomain()
@@ -106,11 +78,19 @@ class SupabaseRecipeRepository(
 
         // Ingredients and steps are replaced wholesale (mirrors recipeStore.updateRecipe).
         client.from("ingredients").delete { filter { eq("recipe_id", id) } }
+        client.from("steps").delete { filter { eq("recipe_id", id) } }
+        insertIngredientsAndSteps(id, form)
+
+        refresh()
+    }
+
+    /** Inserts a recipe's ingredients and steps, preserving order via sort_order/step_number. */
+    private suspend fun insertIngredientsAndSteps(recipeId: String, form: NewRecipe) {
         if (form.ingredients.isNotEmpty()) {
             client.from("ingredients").insert(
                 form.ingredients.mapIndexed { index, ing ->
                     IngredientInsert(
-                        recipeId = id,
+                        recipeId = recipeId,
                         name = ing.name,
                         quantity = ing.quantity,
                         unit = ing.unit,
@@ -121,13 +101,11 @@ class SupabaseRecipeRepository(
                 },
             )
         }
-
-        client.from("steps").delete { filter { eq("recipe_id", id) } }
         if (form.steps.isNotEmpty()) {
             client.from("steps").insert(
                 form.steps.mapIndexed { index, step ->
                     StepInsert(
-                        recipeId = id,
+                        recipeId = recipeId,
                         stepNumber = index + 1,
                         instruction = step.instruction,
                         timerSeconds = step.timerSeconds,
@@ -135,8 +113,6 @@ class SupabaseRecipeRepository(
                 },
             )
         }
-
-        refresh()
     }
 
     override suspend fun delete(id: String) {

@@ -36,10 +36,7 @@ struct UnitsView: View {
         let selected = current == system
         return Button {
             Task {
-                await vm.update(ProfileUpdate(
-                    name: nil, title: nil, avatarUrl: nil,
-                    defaultUnits: system, language: nil, autoBackup: nil,
-                ))
+                await vm.update(.change(defaultUnits: system))
             }
         } label: {
             HStack(spacing: CV.Spacing.lg) {

@@ -38,12 +38,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chefvault.android.ui.common.SectionHeader
+import com.chefvault.android.ui.common.formatQuantity
+import com.chefvault.android.ui.common.uploadPickedImage
 import com.chefvault.shared.data.ChefVaultSDK
 import com.chefvault.shared.data.repository.NewIngredient
 import com.chefvault.shared.data.repository.NewRecipe
 import com.chefvault.shared.data.repository.NewStep
 import com.chefvault.shared.data.repository.StorageBucket
-import java.util.UUID
 import kotlinx.coroutines.launch
 
 private data class DraftIngredient(val name: String = "", val quantity: String = "", val unit: String = "g", val cost: String = "")
@@ -66,7 +67,7 @@ fun RecipeFormScreen(sdk: ChefVaultSDK, recipeId: String?, onDone: () -> Unit) {
     val photos = remember { mutableStateListOf<String>().apply { existing?.platingPhotos?.let { addAll(it) } } }
     val ingredients = remember {
         mutableStateListOf<DraftIngredient>().apply {
-            existing?.ingredients?.forEach { add(DraftIngredient(it.name, formatQty(it.quantity), it.unit, it.costPerUnit?.toString() ?: "")) }
+            existing?.ingredients?.forEach { add(DraftIngredient(it.name, formatQuantity(it.quantity), it.unit, it.costPerUnit?.toString() ?: "")) }
             if (isEmpty()) add(DraftIngredient())
         }
     }
@@ -84,13 +85,7 @@ fun RecipeFormScreen(sdk: ChefVaultSDK, recipeId: String?, onDone: () -> Unit) {
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
             uploading = true
-            runCatching {
-                val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return@runCatching
-                val type = context.contentResolver.getType(uri) ?: "image/jpeg"
-                val ext = if (type.contains("png")) "png" else "jpg"
-                val url = sdk.storage.upload(StorageBucket.RECIPE_IMAGES, "${UUID.randomUUID()}.$ext", bytes, type)
-                photos.add(url)
-            }
+            runCatching { uploadPickedImage(context, uri, sdk.storage, StorageBucket.RECIPE_IMAGES)?.let { photos.add(it) } }
             uploading = false
         }
     }
@@ -172,6 +167,3 @@ fun RecipeFormScreen(sdk: ChefVaultSDK, recipeId: String?, onDone: () -> Unit) {
         }
     }
 }
-
-private fun formatQty(value: Double): String =
-    if (value == value.toLong().toDouble()) value.toLong().toString() else value.toString()

@@ -43,3 +43,21 @@ final class SettingsViewModel {
         }
     }
 }
+
+extension ProfileUpdate {
+    /// Builds a partial profile update touching only the provided fields; the rest stay
+    /// `nil` (= unchanged), so call sites pass only what they actually change.
+    static func change(
+        name: String? = nil,
+        title: String? = nil,
+        avatarUrl: String? = nil,
+        defaultUnits: MeasurementSystem? = nil,
+        language: String? = nil,
+        autoBackup: KotlinBoolean? = nil,
+    ) -> ProfileUpdate {
+        ProfileUpdate(
+            name: name, title: title, avatarUrl: avatarUrl,
+            defaultUnits: defaultUnits, language: language, autoBackup: autoBackup,
+        )
+    }
+}

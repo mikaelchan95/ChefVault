@@ -114,8 +114,10 @@ private fun RecipeLibraryScreen(sdk: ChefVaultSDK, onOpen: (String) -> Unit, onC
 
 @Composable
 private fun RecipeRow(recipe: Recipe, onClick: () -> Unit) {
-    val summary = calculateRecipeCost(recipe.ingredients, recipe.servings)
-    val costText = if (summary.totalCosted > 0) formatCurrency(summary.totalCosted, "USD") else null
+    val costText = remember(recipe.ingredients, recipe.servings) {
+        val summary = calculateRecipeCost(recipe.ingredients, recipe.servings)
+        if (summary.totalCosted > 0) formatCurrency(summary.totalCosted, "USD") else null
+    }
     Surface(onClick = onClick, color = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(12.dp)) {
         Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(

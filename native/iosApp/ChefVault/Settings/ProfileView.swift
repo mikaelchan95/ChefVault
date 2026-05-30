@@ -84,13 +84,10 @@ struct ProfileView: View {
     private func save() async {
         saving = true
         defer { saving = false }
-        let ok = await vm.update(ProfileUpdate(
+        let ok = await vm.update(.change(
             name: name,
             title: title.isEmpty ? nil : title,
             avatarUrl: avatarUrl,
-            defaultUnits: nil,
-            language: nil,
-            autoBackup: nil,
         ))
         if ok { dismiss() }
     }

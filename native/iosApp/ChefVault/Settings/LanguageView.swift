@@ -34,10 +34,7 @@ struct LanguageView: View {
             ForEach(Self.languages) { language in
                 Button {
                     Task {
-                        await vm.update(ProfileUpdate(
-                            name: nil, title: nil, avatarUrl: nil,
-                            defaultUnits: nil, language: language.code, autoBackup: nil,
-                        ))
+                        await vm.update(.change(language: language.code))
                     }
                 } label: {
                     HStack(spacing: CV.Spacing.md) {

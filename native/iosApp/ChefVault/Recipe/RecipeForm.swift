@@ -1,11 +1,9 @@
 import SwiftUI
 import ChefVaultShared
 
-private let unitOptions = ["g", "kg", "ml", "L", "pc", "tbsp", "tsp", "cup", "oz", "lb"]
-private let cuisineOptions = [
-    "French", "Italian", "Japanese", "Asian", "American",
-    "Mexican", "Indian", "Mediterranean", "Fusion", "Pastry", "Other",
-]
+// Unit + cuisine picker options come from the shared module (single source of truth).
+private let unitOptions = ModelsKt.UNITS
+private let cuisineOptions = ModelsKt.CUISINES
 
 private struct DraftIngredient: Identifiable {
     let id = UUID()

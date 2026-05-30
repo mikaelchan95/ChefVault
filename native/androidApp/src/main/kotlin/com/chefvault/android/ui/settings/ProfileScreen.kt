@@ -43,10 +43,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.chefvault.android.ui.common.uploadPickedImage
 import com.chefvault.shared.data.ChefVaultSDK
 import com.chefvault.shared.data.repository.ProfileUpdate
 import com.chefvault.shared.data.repository.StorageBucket
-import java.util.UUID
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,12 +67,7 @@ fun ProfileScreen(sdk: ChefVaultSDK, onBack: () -> Unit) {
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
             uploading = true
-            runCatching {
-                val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return@runCatching
-                val type = context.contentResolver.getType(uri) ?: "image/jpeg"
-                val ext = if (type.contains("png")) "png" else "jpg"
-                avatarUrl = sdk.storage.upload(StorageBucket.AVATARS, "${UUID.randomUUID()}.$ext", bytes, type)
-            }
+            runCatching { uploadPickedImage(context, uri, sdk.storage, StorageBucket.AVATARS)?.let { avatarUrl = it } }
             uploading = false
         }
     }

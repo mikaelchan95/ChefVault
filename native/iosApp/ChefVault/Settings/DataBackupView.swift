@@ -48,11 +48,7 @@ struct DataBackupView: View {
             get: { vm.profile?.autoBackup ?? false },
             set: { newValue in
                 Task {
-                    await vm.update(ProfileUpdate(
-                        name: nil, title: nil, avatarUrl: nil,
-                        defaultUnits: nil, language: nil,
-                        autoBackup: KotlinBoolean(bool: newValue),
-                    ))
+                    await vm.update(.change(autoBackup: KotlinBoolean(bool: newValue)))
                 }
             },
         )
