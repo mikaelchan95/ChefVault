@@ -7,45 +7,56 @@ struct LoginView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: CV.Spacing.lg) {
-                VStack(spacing: CV.Spacing.xs) {
+            VStack(alignment: .leading, spacing: 13) {
+                VStack(alignment: .leading, spacing: 5) {
                     Text("ChefVault")
-                        .font(.largeTitle.bold())
-                        .foregroundStyle(CV.primary)
-                    Text("Professional Recipe Management")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .font(SL.display(40, .heavy))
+                        .tracking(-0.5)
+                        .foregroundStyle(SL.accent)
+                    Text("Your kitchen, organized.")
+                        .font(SL.body(13.5))
+                        .foregroundStyle(SL.muted)
                 }
-                .padding(.top, CV.Spacing.xxxl)
-                .padding(.bottom, CV.Spacing.lg)
+                .padding(.bottom, 13)
 
-                CVTextField(title: "Email address", text: $email, systemImage: "envelope", keyboard: .emailAddress)
-                CVTextField(title: "Password", text: $password, systemImage: "lock", isSecure: true)
+                SLTextField(placeholder: "chef@restaurant.com", text: $email,
+                            systemImage: "envelope", keyboard: .emailAddress)
+                SLTextField(placeholder: "Password", text: $password,
+                            systemImage: "lock", secure: true)
 
-                CVErrorLabel(message: auth.errorMessage)
+                NavigationLink { ForgotPasswordView(auth: auth) } label: {
+                    Text("Forgot password?")
+                        .font(SL.body(12.5))
+                        .foregroundStyle(SL.muted)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
+                .buttonStyle(.plain)
 
-                CVPrimaryButton(title: "Sign In", busy: auth.isBusy) {
+                if let message = auth.errorMessage {
+                    Text(message).font(SL.body(12.5)).foregroundStyle(SL.danger)
+                }
+
+                SLButton(title: "Sign In", variant: .primary, full: true, busy: auth.isBusy) {
                     Task { await auth.signIn(email: email, password: password) }
                 }
 
                 SocialSignInButtons(auth: auth)
 
-                NavigationLink("Forgot Password?") { ForgotPasswordView(auth: auth) }
-                    .font(.subheadline)
-                    .tint(CV.primary)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-
-                HStack(spacing: CV.Spacing.xs) {
-                    Text("Don't have an account?").foregroundStyle(.secondary)
-                    NavigationLink("Sign Up") { SignUpView(auth: auth) }
-                        .tint(CV.primary)
-                        .fontWeight(.semibold)
+                HStack(spacing: 5) {
+                    Text("New here?").foregroundStyle(SL.muted)
+                    NavigationLink { SignUpView(auth: auth) } label: {
+                        Text("Create account").foregroundStyle(SL.accent).fontWeight(.bold)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .font(.subheadline)
-                .padding(.top, CV.Spacing.md)
+                .font(SL.body(12.5))
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, 4)
             }
-            .padding(CV.Spacing.xl)
+            .padding(.horizontal, 24)
+            .frame(maxWidth: .infinity, minHeight: 640, alignment: .center)
         }
-        .navigationBarTitleDisplayMode(.inline)
+        .background(SLBackground())
+        .toolbar(.hidden, for: .navigationBar)
     }
 }

@@ -14,52 +14,75 @@ struct CreateCollectionView: View {
 
     private var trimmedName: String { name.trimmingCharacters(in: .whitespaces) }
 
+    private var statusIndex: Binding<Int> {
+        Binding(
+            get: { status == .active ? 0 : 1 },
+            set: { status = $0 == 0 ? .active : .draft },
+        )
+    }
+
     var body: some View {
-        NavigationStack {
-            Form {
-                Section("Collection") {
-                    TextField("Name", text: $name)
-                    TextField("Description", text: $description, axis: .vertical).lineLimit(2...4)
-                }
-
-                Section("Status") {
-                    Picker("Status", selection: $status) {
-                        Text("Active").tag(CollectionStatus.active)
-                        Text("Draft").tag(CollectionStatus.draft)
+        VStack(spacing: 0) {
+            sheetHeader
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 7) {
+                        SLKicker("Name")
+                        SLTextField(placeholder: "Collection name", text: $name)
                     }
-                    .pickerStyle(.segmented)
-                }
-
-                Section("Color") {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: CV.Spacing.md) {
-                            ForEach(collectionPresetHexes, id: \.self) { hex in
-                                ColorSwatch(hex: hex, selected: colorHex == hex) {
-                                    colorHex = hex
+                    VStack(alignment: .leading, spacing: 7) {
+                        SLKicker("Description")
+                        SLTextField(placeholder: "Optional description", text: $description)
+                    }
+                    VStack(alignment: .leading, spacing: 7) {
+                        SLKicker("Status")
+                        SLSegmented(selection: statusIndex, options: ["Active", "Draft"])
+                    }
+                    VStack(alignment: .leading, spacing: 8) {
+                        SLKicker("Cover")
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 9) {
+                                ForEach(collectionPresetHexes, id: \.self) { hex in
+                                    ColorSwatch(hex: hex, selected: colorHex == hex) {
+                                        colorHex = hex
+                                    }
                                 }
                             }
+                            .padding(.vertical, 2)
                         }
-                        .padding(.vertical, 2)
                     }
+                    VStack(alignment: .leading, spacing: 8) {
+                        SLKicker("Preview")
+                        CollectionPreviewCard(name: trimmedName.isEmpty ? "Collection name" : trimmedName,
+                                              colorHex: colorHex, status: status)
+                    }
+                    if let errorMessage {
+                        Text(errorMessage).font(SL.body(12.5)).foregroundStyle(SL.danger)
+                    }
+                    SLButton(title: "Create Collection", icon: "checkmark", full: true, busy: saving) {
+                        Task { await create() }
+                    }
+                    .disabled(trimmedName.isEmpty || saving)
                 }
-
-                Section("Preview") {
-                    CollectionPreviewCard(name: trimmedName.isEmpty ? "Collection name" : trimmedName,
-                                          colorHex: colorHex, status: status)
-                }
-
-                if let errorMessage { Text(errorMessage).foregroundStyle(.red).font(.footnote) }
-            }
-            .navigationTitle("New Collection")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Create") { Task { await create() } }
-                        .disabled(trimmedName.isEmpty || saving)
-                }
+                .padding(SL.Pad.screen)
+                .padding(.bottom, 40)
             }
         }
+        .background(SLBackground())
+        .presentationDragIndicator(.visible)
+    }
+
+    private var sheetHeader: some View {
+        ZStack {
+            Text("New Collection").font(SL.display(16, .bold)).foregroundStyle(SL.text)
+            Button("Cancel") { dismiss() }
+                .font(SL.body(14.5))
+                .foregroundStyle(SL.muted)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, SL.Pad.screen)
+        .frame(height: 52)
+        .overlay(SL.line.frame(height: 1), alignment: .bottom)
     }
 
     private func create() async {
@@ -82,7 +105,7 @@ struct CreateCollectionView: View {
     }
 }
 
-/// Tappable color circle with a checkmark when selected.
+/// Tappable color tile with an accent ring + checkmark when selected.
 struct ColorSwatch: View {
     let hex: String
     let selected: Bool
@@ -90,52 +113,48 @@ struct ColorSwatch: View {
 
     var body: some View {
         Button(action: action) {
-            Circle()
-                .fill(colorFromHex(hex) ?? CV.primary)
-                .frame(width: 40, height: 40)
+            RoundedRectangle(cornerRadius: 12)
+                .fill(colorFromHex(hex) ?? SL.accent)
+                .frame(width: 48, height: 48)
                 .overlay(
                     Image(systemName: "checkmark")
-                        .font(.subheadline.bold())
+                        .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(.white)
                         .opacity(selected ? 1 : 0),
                 )
                 .overlay(
-                    Circle().strokeBorder(.white, lineWidth: selected ? 2 : 0),
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(selected ? SL.accent : SL.line2, lineWidth: selected ? 2 : 1),
                 )
         }
         .buttonStyle(.plain)
     }
 }
 
-/// Compact hero preview mirroring the grid card's look.
+/// Compact hero preview mirroring the collection detail hero look.
 struct CollectionPreviewCard: View {
     let name: String
     let colorHex: String
     let status: CollectionStatus
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ZStack(alignment: .bottomLeading) {
-                (colorFromHex(colorHex) ?? CV.primary)
-                    .frame(height: 72)
-                    .frame(maxWidth: .infinity)
+        ZStack(alignment: .bottomLeading) {
+            (colorFromHex(colorHex) ?? SL.accent)
+                .frame(height: 96)
+                .frame(maxWidth: .infinity)
+            VStack(alignment: .leading, spacing: 6) {
                 Image(systemName: "square.stack")
-                    .font(.title2)
-                    .foregroundStyle(.white.opacity(0.85))
-                    .padding(CV.Spacing.md)
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.7))
+                HStack(alignment: .firstTextBaseline) {
+                    Text(name).font(SL.display(18, .heavy)).tracking(-0.4).foregroundStyle(.white).lineLimit(1)
+                    Spacer(minLength: 8)
+                    SLCollectionStatusPill(status: status)
+                }
             }
-            HStack {
-                Text(name).font(.headline).lineLimit(1)
-                Spacer()
-                CollectionStatusBadge(status: status)
-            }
-            .padding(CV.Spacing.md)
+            .padding(SL.Pad.card)
         }
-        .clipShape(RoundedRectangle(cornerRadius: CV.Radius.lg))
-        .overlay(
-            RoundedRectangle(cornerRadius: CV.Radius.lg)
-                .strokeBorder(Color(.separator).opacity(0.5), lineWidth: 0.5),
-        )
-        .listRowInsets(EdgeInsets())
+        .clipShape(RoundedRectangle(cornerRadius: SL.R.md))
+        .overlay(RoundedRectangle(cornerRadius: SL.R.md).strokeBorder(SL.line, lineWidth: 1))
     }
 }

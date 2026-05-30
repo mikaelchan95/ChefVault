@@ -51,6 +51,32 @@ final class CollectionDetailViewModel {
     }
 }
 
+/// Tone gradients keyed by a stable hash of the collection — one of four ember/sage/violet/steel pairs.
+private let collectionDetailTones: [[Color]] = [
+    [Color(hex: 0x2A1D14), Color(hex: 0x3A2415)],
+    [Color(hex: 0x15231C), Color(hex: 0x1C3327)],
+    [Color(hex: 0x241A25), Color(hex: 0x2F2036)],
+    [Color(hex: 0x1A2230), Color(hex: 0x22304A)],
+]
+
+/// Service Line status pill — Active uses the ember accent, Draft a neutral surface.
+struct SLCollectionStatusPill: View {
+    let status: CollectionStatus
+
+    private var isActive: Bool { status == .active }
+
+    var body: some View {
+        Text((isActive ? "Active" : "Draft").uppercased())
+            .font(SL.mono(9.5, .bold))
+            .tracking(0.8)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .foregroundStyle(isActive ? SL.accent : SL.muted)
+            .background(isActive ? SL.accentSoft : SL.surface2, in: Capsule())
+            .overlay(Capsule().strokeBorder(isActive ? SL.accent.opacity(0.35) : SL.line, lineWidth: 1))
+    }
+}
+
 struct CollectionDetailView: View {
     let sdk: ChefVaultSDK
     @State private var vm: CollectionDetailViewModel
@@ -70,43 +96,45 @@ struct CollectionDetailView: View {
         recipes.filter { collection.recipeIds.contains($0.id) }
     }
 
+    private func tone(for collection: ChefVaultShared.Collection) -> Int {
+        collection.id.unicodeScalars.reduce(0) { $0 + Int($1.value) } % 4
+    }
+
     var body: some View {
-        ScrollView {
+        VStack(spacing: 0) {
+            backRow
             if let collection = vm.collection {
-                VStack(alignment: .leading, spacing: CV.Spacing.xl) {
-                    hero(collection)
-                    statsRow(collection)
-                    Button { showAddRecipes = true } label: {
-                        Label("Add Recipes", systemImage: "plus.circle")
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        hero(collection)
+                        VStack(alignment: .leading, spacing: 18) {
+                            statsRow(collection)
+                            addRecipesBar
+                            recipesSection(collection)
+                            footnote
+                        }
+                        .padding(SL.Pad.screen)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(CV.primary)
-                    recipesSection(collection)
+                    .padding(.bottom, 40)
                 }
-                .padding(CV.Spacing.lg)
             } else {
-                ContentUnavailableView("Collection unavailable", systemImage: "square.stack")
-                    .padding(.top, CV.Spacing.xxxl)
+                Spacer()
+                VStack(spacing: 6) {
+                    Image(systemName: "square.stack").font(.system(size: 26)).foregroundStyle(SL.accent)
+                    Text("Collection unavailable").font(SL.display(19, .bold)).foregroundStyle(SL.text)
+                }
+                .frame(maxWidth: .infinity)
+                Spacer()
             }
         }
-        .navigationTitle(vm.collection?.name ?? "Collection")
-        .navigationBarTitleDisplayMode(.inline)
+        .background(SLBackground())
+        .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(for: RecipeRoute.self) { route in
             RecipeDetailView(
                 sdk: sdk,
                 recipeId: route.id,
                 baseServings: Int(recipes.first { $0.id == route.id }?.servings ?? 1),
             )
-        }
-        .toolbar {
-            if vm.collection != nil {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Button { showEdit = true } label: { Label("Edit", systemImage: "pencil") }
-                        Button(role: .destructive) { confirmDelete = true } label: { Label("Delete", systemImage: "trash") }
-                    } label: { Image(systemName: "ellipsis.circle") }
-                }
-            }
         }
         .task { await vm.observe() }
         .task { await observeRecipes() }
@@ -135,35 +163,74 @@ struct CollectionDetailView: View {
         }
     }
 
+    // MARK: - Back row
+
+    private var backRow: some View {
+        HStack(spacing: 10) {
+            Button(action: { dismiss() }) {
+                HStack(spacing: 3) {
+                    Image(systemName: "chevron.left").font(.system(size: 13, weight: .semibold))
+                    Text("Collections").font(SL.body(14, .semibold))
+                }
+                .foregroundStyle(SL.muted)
+            }
+            .buttonStyle(.plain)
+            Spacer(minLength: 0)
+            if vm.collection != nil {
+                Menu {
+                    Button { showEdit = true } label: { Label("Edit", systemImage: "pencil") }
+                    Button(role: .destructive) { confirmDelete = true } label: { Label("Delete", systemImage: "trash") }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 15, weight: .semibold))
+                        .frame(width: 38, height: 38)
+                        .foregroundStyle(SL.text)
+                        .background(SL.surface, in: RoundedRectangle(cornerRadius: 12))
+                        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(SL.line2, lineWidth: 1))
+                }
+            }
+        }
+        .padding(.horizontal, SL.Pad.screen)
+        .padding(.top, 6)
+        .padding(.bottom, 12)
+    }
+
     // MARK: - Sections
 
     private func hero(_ collection: ChefVaultShared.Collection) -> some View {
-        VStack(alignment: .leading, spacing: CV.Spacing.md) {
-            ZStack(alignment: .bottomLeading) {
-                heroColor(for: collection)
-                    .frame(height: 120)
-                    .frame(maxWidth: .infinity)
+        let count = collection.recipeIds.count
+        let statusLabel = collection.status == .active ? "active" : "draft"
+        return ZStack(alignment: .bottomLeading) {
+            LinearGradient(
+                colors: collectionDetailTones[tone(for: collection)],
+                startPoint: .topLeading, endPoint: .bottomTrailing,
+            )
+            .frame(height: 140)
+            .frame(maxWidth: .infinity)
+            VStack(alignment: .leading, spacing: 6) {
                 Image(systemName: collection.icon ?? "square.stack")
-                    .font(.largeTitle)
-                    .foregroundStyle(.white.opacity(0.85))
-                    .padding(CV.Spacing.lg)
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.7))
+                Text(collection.name)
+                    .font(SL.display(24, .heavy))
+                    .tracking(-0.5)
+                    .foregroundStyle(SL.text)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("\(count) recipe\(count == 1 ? "" : "s") · \(statusLabel)")
+                    .font(SL.mono(11.5))
+                    .foregroundStyle(SL.muted)
             }
-            .clipShape(RoundedRectangle(cornerRadius: CV.Radius.lg))
-            HStack {
-                Text(collection.name).font(.title.bold())
-                Spacer()
-                CollectionStatusBadge(status: collection.status)
-            }
-            if let description = collection.description_, !description.isEmpty {
-                Text(description).font(.subheadline).foregroundStyle(.secondary)
-            }
+            .padding(SL.Pad.screen)
         }
+        .overlay(SL.line.frame(height: 1), alignment: .bottom)
     }
 
     private func statsRow(_ collection: ChefVaultShared.Collection) -> some View {
-        CVCard {
-            HStack {
+        SLCard(soft: true) {
+            HStack(alignment: .top) {
                 statItem("Recipes", "\(collection.recipeIds.count)")
+                Spacer()
+                statItem("Status", collection.status == .active ? "Active" : "Draft")
                 Spacer()
                 statItem("Created", String(collection.createdAt.prefix(10)))
             }
@@ -171,30 +238,55 @@ struct CollectionDetailView: View {
     }
 
     private func statItem(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label.uppercased()).font(.caption2).foregroundStyle(.secondary)
-            Text(value).font(.title3.bold()).foregroundStyle(CV.primary)
+        VStack(alignment: .leading, spacing: 4) {
+            SLKicker(label)
+            Text(value).font(SL.display(16, .bold)).foregroundStyle(SL.text).lineLimit(1)
+        }
+    }
+
+    private var addRecipesBar: some View {
+        SLButton(title: "Manage Recipes", variant: .secondary, icon: "plus", full: true) {
+            showAddRecipes = true
         }
     }
 
     private func recipesSection(_ collection: ChefVaultShared.Collection) -> some View {
         let members = memberRecipes(collection)
-        return VStack(alignment: .leading, spacing: CV.Spacing.md) {
-            CVSectionHeader(title: "Recipes")
+        return VStack(alignment: .leading, spacing: 10) {
+            SLKicker("Recipes")
             if members.isEmpty {
-                Text("No recipes in this collection yet.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                emptyRecipes
             } else {
-                ForEach(members, id: \.id) { recipe in
-                    NavigationLink(value: RecipeRoute(id: recipe.id)) {
-                        RecipeRowView(recipe: recipe)
+                VStack(spacing: 11) {
+                    ForEach(members, id: \.id) { recipe in
+                        NavigationLink(value: RecipeRoute(id: recipe.id)) {
+                            RecipeRowView(recipe: recipe)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
-                    if recipe.id != members.last?.id { Divider() }
                 }
             }
         }
+    }
+
+    private var emptyRecipes: some View {
+        SLCard(soft: true) {
+            VStack(spacing: 6) {
+                Image(systemName: "fork.knife").font(.system(size: 22)).foregroundStyle(SL.faint)
+                Text("No recipes yet").font(SL.display(15, .bold)).foregroundStyle(SL.text)
+                Text("Tap Manage Recipes to add some.").font(SL.body(12.5)).foregroundStyle(SL.muted)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+        }
+    }
+
+    private var footnote: some View {
+        Text("Recipes are many-to-many — one recipe can live in several collections.")
+            .font(SL.body(11.5))
+            .foregroundStyle(SL.faint)
+            .lineSpacing(2)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -206,36 +298,90 @@ struct AddRecipesSheet: View {
     let onToggle: (String, Bool) -> Void
     @Environment(\.dismiss) private var dismiss
 
+    @State private var query = ""
+    /// Local mirror of membership so the checklist reflects taps instantly while the
+    /// shared StateFlow propagates back through the parent.
+    @State private var selected: Set<String> = []
+
+    private var filtered: [Recipe] {
+        guard !query.isEmpty else { return allRecipes }
+        return allRecipes.filter { $0.title.localizedCaseInsensitiveContains(query) }
+    }
+
     var body: some View {
-        NavigationStack {
-            Group {
-                if allRecipes.isEmpty {
-                    ContentUnavailableView("No recipes", systemImage: "fork.knife",
-                                           description: Text("Create recipes first to add them here"))
-                } else {
-                    List(allRecipes, id: \.id) { recipe in
-                        let isMember = selectedIds.contains(recipe.id)
-                        Button {
-                            onToggle(recipe.id, isMember)
-                        } label: {
-                            HStack {
-                                RecipeRowView(recipe: recipe)
-                                Spacer()
-                                Image(systemName: isMember ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(isMember ? CV.primary : .secondary)
+        VStack(spacing: 0) {
+            sheetHeader
+            if allRecipes.isEmpty {
+                Spacer()
+                VStack(spacing: 6) {
+                    Image(systemName: "fork.knife").font(.system(size: 26)).foregroundStyle(SL.accent)
+                    Text("No recipes").font(SL.display(18, .bold)).foregroundStyle(SL.text)
+                    Text("Create recipes first to add them here").font(SL.body(12.5)).foregroundStyle(SL.muted)
+                }
+                .frame(maxWidth: .infinity)
+                Spacer()
+            } else {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        SLSearchField(text: $query)
+                            .padding(.horizontal, SL.Pad.screen)
+                            .padding(.bottom, 10)
+                        VStack(spacing: 0) {
+                            ForEach(filtered, id: \.id) { recipe in
+                                recipeToggleRow(recipe)
                             }
                         }
-                        .buttonStyle(.plain)
+                        .padding(.horizontal, SL.Pad.screen)
                     }
-                    .listStyle(.plain)
+                    .padding(.top, 6)
+                    .padding(.bottom, 40)
                 }
             }
-            .navigationTitle("Add Recipes")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
-            }
         }
+        .background(SLBackground())
+        .presentationDragIndicator(.visible)
+        .onAppear { selected = selectedIds }
+    }
+
+    private func recipeToggleRow(_ recipe: Recipe) -> some View {
+        let isMember = selected.contains(recipe.id)
+        let tone = recipe.title.unicodeScalars.reduce(0) { $0 + Int($1.value) } % 4
+        return Button {
+            onToggle(recipe.id, isMember)
+            if isMember { selected.remove(recipe.id) } else { selected.insert(recipe.id) }
+        } label: {
+            HStack(spacing: 12) {
+                SLTile(letter: String(recipe.title.prefix(1)).uppercased(), tone: tone, size: 42)
+                Text(recipe.title)
+                    .font(SL.display(13.5, .bold))
+                    .foregroundStyle(SL.text)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .lineLimit(2)
+                Image(systemName: isMember ? "checkmark" : "plus")
+                    .font(.system(size: 14, weight: .bold))
+                    .frame(width: 28, height: 28)
+                    .foregroundStyle(isMember ? SL.onAccent : SL.muted)
+                    .background(isMember ? SL.accent : .clear, in: Circle())
+                    .overlay(Circle().strokeBorder(isMember ? SL.accent : SL.line2, lineWidth: 1.5))
+            }
+            .padding(.vertical, 11)
+            .contentShape(Rectangle())
+            .overlay(SL.line.frame(height: 1), alignment: .bottom)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var sheetHeader: some View {
+        ZStack {
+            Text("Manage Recipes").font(SL.display(16, .bold)).foregroundStyle(SL.text)
+            Button("Done") { dismiss() }
+                .font(SL.body(14.5, .bold))
+                .foregroundStyle(SL.accent)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .padding(.horizontal, SL.Pad.screen)
+        .frame(height: 52)
+        .overlay(SL.line.frame(height: 1), alignment: .bottom)
     }
 }
 
@@ -261,32 +407,62 @@ struct EditCollectionView: View {
 
     private var trimmedName: String { name.trimmingCharacters(in: .whitespaces) }
 
+    private var statusIndex: Binding<Int> {
+        Binding(
+            get: { status == .active ? 0 : 1 },
+            set: { status = $0 == 0 ? .active : .draft },
+        )
+    }
+
     var body: some View {
-        NavigationStack {
-            Form {
-                Section("Collection") {
-                    TextField("Name", text: $name)
-                    TextField("Description", text: $description, axis: .vertical).lineLimit(2...4)
-                }
-                Section("Status") {
-                    Picker("Status", selection: $status) {
-                        Text("Active").tag(CollectionStatus.active)
-                        Text("Draft").tag(CollectionStatus.draft)
+        VStack(spacing: 0) {
+            sheetHeader
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 7) {
+                        SLKicker("Name")
+                        SLTextField(placeholder: "Collection name", text: $name)
                     }
-                    .pickerStyle(.segmented)
+                    VStack(alignment: .leading, spacing: 7) {
+                        SLKicker("Description")
+                        SLTextField(placeholder: "Optional description", text: $description)
+                    }
+                    VStack(alignment: .leading, spacing: 7) {
+                        SLKicker("Status")
+                        SLSegmented(selection: statusIndex, options: ["Active", "Draft"])
+                    }
+                    if let errorMessage {
+                        Text(errorMessage).font(SL.body(12.5)).foregroundStyle(SL.danger)
+                    }
+                    SLDivider().padding(.vertical, 4)
+                    SLButton(title: "Save Changes", icon: "checkmark", full: true, busy: saving) {
+                        Task { await save() }
+                    }
+                    .disabled(trimmedName.isEmpty || saving)
+                    Text("Recipes themselves are never deleted.")
+                        .font(SL.body(11))
+                        .foregroundStyle(SL.faint)
+                        .frame(maxWidth: .infinity)
                 }
-                if let errorMessage { Text(errorMessage).foregroundStyle(.red).font(.footnote) }
-            }
-            .navigationTitle("Edit Collection")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { Task { await save() } }
-                        .disabled(trimmedName.isEmpty || saving)
-                }
+                .padding(SL.Pad.screen)
+                .padding(.bottom, 40)
             }
         }
+        .background(SLBackground())
+        .presentationDragIndicator(.visible)
+    }
+
+    private var sheetHeader: some View {
+        ZStack {
+            Text("Edit Collection").font(SL.display(16, .bold)).foregroundStyle(SL.text)
+            Button("Cancel") { dismiss() }
+                .font(SL.body(14.5))
+                .foregroundStyle(SL.muted)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, SL.Pad.screen)
+        .frame(height: 52)
+        .overlay(SL.line.frame(height: 1), alignment: .bottom)
     }
 
     private func save() async {

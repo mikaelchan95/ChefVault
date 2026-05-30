@@ -8,12 +8,13 @@ struct SocialSignInButtons: View {
     @State private var currentNonce: String?
 
     var body: some View {
-        VStack(spacing: CV.Spacing.md) {
-            HStack(spacing: CV.Spacing.md) {
-                Rectangle().fill(Color(.separator)).frame(height: 0.5)
-                Text("or").font(.footnote).foregroundStyle(.secondary)
-                Rectangle().fill(Color(.separator)).frame(height: 0.5)
+        VStack(spacing: 9) {
+            HStack(spacing: 11) {
+                SLDivider()
+                SLKicker("or")
+                SLDivider()
             }
+            .padding(.vertical, 9)
 
             SignInWithAppleButton(.signIn) { request in
                 let nonce = randomNonceString()
@@ -28,20 +29,14 @@ struct SocialSignInButtons: View {
                       let nonce = currentNonce else { return }
                 Task { await auth.signInWithApple(idToken: idToken, nonce: nonce) }
             }
-            .signInWithAppleButtonStyle(.black)
-            .frame(height: 50)
-            .clipShape(RoundedRectangle(cornerRadius: CV.Radius.lg))
+            .signInWithAppleButtonStyle(.white)
+            .frame(height: 46)
+            .clipShape(RoundedRectangle(cornerRadius: SL.R.sm))
+            .overlay(RoundedRectangle(cornerRadius: SL.R.sm).strokeBorder(SL.line2, lineWidth: 1))
 
-            Button {
+            SLButton(title: "Continue with Google", variant: .secondary, icon: "globe", full: true) {
                 Task { await auth.signInWithGoogle() }
-            } label: {
-                Label("Continue with Google", systemImage: "globe")
-                    .fontWeight(.semibold)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, CV.Spacing.md)
-                    .overlay(RoundedRectangle(cornerRadius: CV.Radius.lg).strokeBorder(Color(.separator)))
             }
-            .tint(.primary)
         }
     }
 }

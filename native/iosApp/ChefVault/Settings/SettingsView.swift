@@ -135,7 +135,7 @@ struct SettingsView: View {
     // MARK: - Grouped settings
 
     private var accountGroup: some View {
-        SLSetGroup("Account & Security") {
+        SLSetGroup(title: "Account & Security") {
             SLSetRow(label: "Profile Information", value: "Edit") {
                 ProfileView(sdk: sdk, vm: vm)
             }
@@ -151,7 +151,7 @@ struct SettingsView: View {
     }
 
     private var preferencesGroup: some View {
-        SLSetGroup("Preferences") {
+        SLSetGroup(title: "Preferences") {
             SLSetRow(label: "Use system theme", toggle: $useSystemTheme)
             SLDivider()
             SLSetRow(
@@ -168,7 +168,7 @@ struct SettingsView: View {
     }
 
     private var dataGroup: some View {
-        SLSetGroup("Data") {
+        SLSetGroup(title: "Data") {
             SLSetRow(
                 label: "Auto-backup",
                 toggle: Binding(
@@ -184,26 +184,7 @@ struct SettingsView: View {
     }
 }
 
-// MARK: - Grouped setting card
-
-/// A kicker label over an `SLCard` with zero padding — rows manage their own insets so
-/// dividers can run edge-to-edge inside the grouped card.
-private struct SLSetGroup<Content: View>: View {
-    let title: String
-    @ViewBuilder var content: Content
-    init(_ title: String, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.content = content()
-    }
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            SLKicker(title)
-            SLCard(pad: 0) {
-                VStack(spacing: 0) { content }
-            }
-        }
-    }
-}
+// MARK: - Grouped setting row (SLSetGroup lives in the shared SL kit)
 
 /// One row inside a grouped card: a label plus either a toggle or a mono "value ›" stamp.
 /// The valued variant is a `NavigationLink` to a destination; the toggle variant is inert
@@ -260,28 +241,6 @@ private extension SLSetRow where Destination == EmptyView {
         self.value = nil
         self.toggle = toggle
         self.destination = nil
-    }
-}
-
-/// Pill switch matching the hi-fi: 40×23 track, accent when on, white knob.
-private struct SLToggle: View {
-    @Binding var isOn: Bool
-    var body: some View {
-        Capsule()
-            .fill(isOn ? SL.accent : SL.surface2)
-            .frame(width: 40, height: 23)
-            .overlay(Capsule().strokeBorder(isOn ? .clear : SL.line2, lineWidth: 1))
-            .overlay(
-                Circle()
-                    .fill(.white)
-                    .frame(width: 17, height: 17)
-                    .padding(3),
-                alignment: isOn ? .trailing : .leading,
-            )
-            .contentShape(Capsule())
-            .onTapGesture {
-                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) { isOn.toggle() }
-            }
     }
 }
 
