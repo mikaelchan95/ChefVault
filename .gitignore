@@ -35,10 +35,10 @@ yarn-error.log*
 coverage/
 .nyc_output/
 
-# Expo
+# Expo (anchored to repo root so they don't match the native Kotlin `android` package)
 .expo/
-ios/
-android/
+/ios/
+/android/
 web-build/
 
 # Misc
