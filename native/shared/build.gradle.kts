@@ -1,13 +1,14 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.androidLibrary)
     alias(libs.plugins.skie)
 }
 
 kotlin {
-    // iOS targets first (iOS-first build order). androidTarget() is added in the
-    // Android phase once the Android SDK is installed — commonMain is platform-agnostic
-    // so this deferral costs nothing.
+    // iOS targets first (iOS-first build order).
     val iosTargets = listOf(iosArm64(), iosSimulatorArm64(), iosX64())
     iosTargets.forEach { target ->
         target.binaries.framework {
@@ -15,6 +16,11 @@ kotlin {
             isStatic = true
             binaryOption("bundleId", "com.chefvault.shared")
         }
+    }
+
+    // Android target — the Compose app consumes the exact same shared logic, no bridging.
+    androidTarget {
+        compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
     }
 
     // Host-native target for running commonTest on the Mac (same Kotlin/Native backend
@@ -40,5 +46,21 @@ kotlin {
             implementation(libs.ktor.client.darwin)
             implementation(libs.multiplatform.settings)
         }
+        // OkHttp Ktor engine for Android.
+        androidMain.dependencies {
+            implementation(libs.ktor.client.okhttp)
+        }
+    }
+}
+
+android {
+    namespace = "com.chefvault.shared"
+    compileSdk = 35
+    defaultConfig {
+        minSdk = 26
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 }
