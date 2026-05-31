@@ -182,7 +182,20 @@ struct SLRecipeRow: View {
     var body: some View {
         SLCard(pad: 11) {
             HStack(spacing: 13) {
-                SLTile(letter: String(recipe.title.prefix(1)).uppercased(), tone: tone, size: 60)
+                if let img = recipe.imageUrl?.nilIfBlank, let url = URL(string: img) {
+                    AsyncImage(url: url) { phase in
+                        if let image = phase.image {
+                            image.resizable().scaledToFill()
+                        } else {
+                            SLTile(letter: String(recipe.title.prefix(1)).uppercased(), tone: tone, size: 60)
+                        }
+                    }
+                    .frame(width: 60, height: 60)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(SL.line2, lineWidth: 1))
+                } else {
+                    SLTile(letter: String(recipe.title.prefix(1)).uppercased(), tone: tone, size: 60)
+                }
                 VStack(alignment: .leading, spacing: 5) {
                     Text(recipe.title).font(SL.display(15.5, .bold)).foregroundStyle(SL.text).lineLimit(2)
                     Text(meta).font(SL.body(11.5)).foregroundStyle(SL.muted).lineLimit(1)

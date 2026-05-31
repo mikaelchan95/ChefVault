@@ -58,42 +58,43 @@ struct RecipeDetailView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                backRow
-                if let recipe = vm.recipe {
-                    controlBar(recipe)
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 18) {
-                            metaGrid(recipe)
-                            costCard(recipe)
-                            ingredientsSection(recipe)
-                            if !recipe.steps.isEmpty { methodSection(recipe) }
-                            if !recipe.platingPhotos.isEmpty { platingSection(recipe) }
-                        }
-                        .padding(SL.Pad.screen)
-                        .padding(.bottom, 40)
+        // NOTE: no nested NavigationStack here — this view is pushed into the
+        // Recipes tab's NavigationStack. Wrapping it in its own stack renders blank
+        // (matches the working CollectionDetailView, which is also a plain pushed view).
+        VStack(spacing: 0) {
+            backRow
+            if let recipe = vm.recipe {
+                controlBar(recipe)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        metaGrid(recipe)
+                        costCard(recipe)
+                        ingredientsSection(recipe)
+                        if !recipe.steps.isEmpty { methodSection(recipe) }
+                        if !recipe.platingPhotos.isEmpty { platingSection(recipe) }
                     }
-                } else {
-                    Spacer()
-                    VStack(spacing: 6) {
-                        Image(systemName: "fork.knife").font(.system(size: 26)).foregroundStyle(SL.accent)
-                        Text("Recipe unavailable").font(SL.display(19, .bold)).foregroundStyle(SL.text)
-                    }
-                    .frame(maxWidth: .infinity)
-                    Spacer()
+                    .padding(SL.Pad.screen)
+                    .padding(.bottom, 40)
                 }
-            }
-            .background(SLBackground())
-            .toolbar(.hidden, for: .navigationBar)
-            .task { await vm.observe() }
-            .sheet(isPresented: $showEdit) {
-                if let recipe = vm.recipe { RecipeEditView(sdk: sdk, recipe: recipe) }
-            }
-            .confirmationDialog("Delete this recipe?", isPresented: $confirmDelete, titleVisibility: .visible) {
-                Button("Delete", role: .destructive) {
-                    Task { if await vm.delete() { dismiss() } }
+            } else {
+                Spacer()
+                VStack(spacing: 6) {
+                    Image(systemName: "fork.knife").font(.system(size: 26)).foregroundStyle(SL.accent)
+                    Text("Recipe unavailable").font(SL.display(19, .bold)).foregroundStyle(SL.text)
                 }
+                .frame(maxWidth: .infinity)
+                Spacer()
+            }
+        }
+        .background(SLBackground())
+        .toolbar(.hidden, for: .navigationBar)
+        .task { await vm.observe() }
+        .sheet(isPresented: $showEdit) {
+            if let recipe = vm.recipe { RecipeEditView(sdk: sdk, recipe: recipe) }
+        }
+        .confirmationDialog("Delete this recipe?", isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                Task { if await vm.delete() { dismiss() } }
             }
         }
     }
@@ -248,7 +249,7 @@ struct RecipeDetailView: View {
     private var ingredientHeader: some View {
         HStack(spacing: 0) {
             Text("QTY").frame(width: 36, alignment: .leading)
-            Text("UNIT").frame(width: 40, alignment: .leading)
+            Text("UNIT").frame(width: 58, alignment: .leading)
             Text("INGREDIENT").frame(maxWidth: .infinity, alignment: .leading)
             Text("COST").frame(width: 54, alignment: .trailing)
         }
@@ -265,10 +266,12 @@ struct RecipeDetailView: View {
         HStack(alignment: .top, spacing: 0) {
             Text(formatQuantity(item.quantity))
                 .font(SL.mono(12, .bold)).foregroundStyle(SL.accent)
+                .lineLimit(1)
                 .frame(width: 36, alignment: .leading)
             Text(item.unit)
                 .font(SL.mono(11)).foregroundStyle(SL.muted)
-                .frame(width: 40, alignment: .leading)
+                .lineLimit(1).minimumScaleFactor(0.6)
+                .frame(width: 58, alignment: .leading)
             Group {
                 if let notes = item.notes, !notes.isEmpty {
                     (Text(item.name).foregroundColor(SL.text)
