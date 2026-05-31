@@ -30,6 +30,16 @@ struct RootView: View {
     let sdk: ChefVaultSDK
     let rc: RevenueCatService
 
+    /// User appearance override (System / Light / Dark), persisted locally.
+    @AppStorage("appearance") private var appearance = "system"
+    private var colorSchemeOverride: ColorScheme? {
+        switch appearance {
+        case "light": return .light
+        case "dark": return .dark
+        default: return nil // follow the system
+        }
+    }
+
     var body: some View {
         Group {
             switch auth.screen {
@@ -41,6 +51,7 @@ struct RootView: View {
                 SLTabScaffold(sdk: sdk, auth: auth)
             }
         }
+        .preferredColorScheme(colorSchemeOverride)
         .environment(rc)
         .task { await rc.observe() }
         // Bind RevenueCat identity to the Supabase user so the webhook can map

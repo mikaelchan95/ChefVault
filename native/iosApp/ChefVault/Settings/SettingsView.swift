@@ -9,12 +9,20 @@ struct SettingsView: View {
     let auth: AuthViewModel
     @State private var vm: SettingsViewModel
     @State private var confirmSignOut = false
-    @State private var useSystemTheme = true
+    @AppStorage("appearance") private var appearance = "system"
 
     init(sdk: ChefVaultSDK, auth: AuthViewModel) {
         self.sdk = sdk
         self.auth = auth
         _vm = State(initialValue: SettingsViewModel(repo: sdk.profile))
+    }
+
+    private var appearanceLabel: String {
+        switch appearance {
+        case "light": return "Light"
+        case "dark": return "Dark"
+        default: return "System"
+        }
     }
 
     private var isPro: Bool { vm.profile?.plan == .pro }
@@ -152,7 +160,9 @@ struct SettingsView: View {
 
     private var preferencesGroup: some View {
         SLSetGroup(title: "Preferences") {
-            SLSetRow(label: "Use system theme", toggle: $useSystemTheme)
+            SLSetRow(label: "Appearance", value: appearanceLabel) {
+                AppearanceView()
+            }
             SLDivider()
             SLSetRow(
                 label: "Default units",

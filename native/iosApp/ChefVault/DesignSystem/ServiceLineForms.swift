@@ -92,8 +92,15 @@ struct SLToggle: View {
             RoundedRectangle(cornerRadius: 23)
                 .fill(isOn ? SL.accent : SL.line2)
                 .frame(width: 40, height: 23)
-                .overlay(Circle().fill(.white).frame(width: 18, height: 18).padding(2.5),
-                         alignment: isOn ? .trailing : .leading)
+                .overlay(
+                    Circle()
+                        .fill(.white)
+                        .frame(width: 18, height: 18)
+                        .overlay(Circle().strokeBorder(Color.black.opacity(0.12), lineWidth: 0.5))
+                        .shadow(color: .black.opacity(0.22), radius: 1.5, y: 0.5)
+                        .padding(2.5),
+                    alignment: isOn ? .trailing : .leading,
+                )
                 .animation(.easeInOut(duration: 0.18), value: isOn)
         }
         .buttonStyle(.plain)

@@ -6,6 +6,7 @@ import SwiftUI
 struct SocialSignInButtons: View {
     let auth: AuthViewModel
     @State private var currentNonce: String?
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(spacing: 9) {
@@ -29,7 +30,7 @@ struct SocialSignInButtons: View {
                       let nonce = currentNonce else { return }
                 Task { await auth.signInWithApple(idToken: idToken, nonce: nonce) }
             }
-            .signInWithAppleButtonStyle(.white)
+            .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
             .frame(height: 46)
             .clipShape(RoundedRectangle(cornerRadius: SL.R.sm))
             .overlay(RoundedRectangle(cornerRadius: SL.R.sm).strokeBorder(SL.line2, lineWidth: 1))
