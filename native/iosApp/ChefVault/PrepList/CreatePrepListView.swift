@@ -29,6 +29,7 @@ struct CreatePrepListView: View {
     @State private var selectedRecipeIds: Set<String> = []
     @State private var saving = false
     @State private var errorMessage: String?
+    @State private var showPaywall = false
 
     init(sdk: ChefVaultSDK) {
         self.sdk = sdk
@@ -60,6 +61,7 @@ struct CreatePrepListView: View {
         .background(SLBackground())
         .tint(SL.accent)
         .task { await vm.observe() }
+        .paywallSheet(isPresented: $showPaywall)
     }
 
     // MARK: Header
@@ -208,7 +210,11 @@ struct CreatePrepListView: View {
             )
             dismiss()
         } catch {
-            errorMessage = (error as NSError).localizedDescription
+            if error.isFreePlanLimit {
+                showPaywall = true
+            } else {
+                errorMessage = (error as NSError).localizedDescription
+            }
         }
     }
 }

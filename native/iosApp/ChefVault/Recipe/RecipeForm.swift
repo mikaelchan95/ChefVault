@@ -47,6 +47,7 @@ struct RecipeFormView: View {
     @State private var photos: [String]
     @State private var saving = false
     @State private var errorMessage: String?
+    @State private var showPaywall = false
 
     init(sdk: ChefVaultSDK, existing: Recipe?) {
         self.sdk = sdk
@@ -102,6 +103,7 @@ struct RecipeFormView: View {
         }
         .background(SLBackground())
         .tint(SL.accent)
+        .paywallSheet(isPresented: $showPaywall)
     }
 
     // MARK: Header
@@ -247,10 +249,11 @@ struct RecipeFormView: View {
             }
             dismiss()
         } catch {
-            let message = (error as NSError).localizedDescription
-            errorMessage = (message.contains("limit") || message.contains("50"))
-                ? "Free plan limit reached (50 recipes). Upgrade to Pro for unlimited."
-                : message
+            if error.isFreePlanLimit {
+                showPaywall = true
+            } else {
+                errorMessage = (error as NSError).localizedDescription
+            }
         }
     }
 }

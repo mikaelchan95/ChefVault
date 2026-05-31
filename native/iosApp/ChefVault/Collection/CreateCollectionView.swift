@@ -11,6 +11,7 @@ struct CreateCollectionView: View {
     @State private var colorHex = collectionPresetHexes[0]
     @State private var saving = false
     @State private var errorMessage: String?
+    @State private var showPaywall = false
 
     private var trimmedName: String { name.trimmingCharacters(in: .whitespaces) }
 
@@ -70,6 +71,7 @@ struct CreateCollectionView: View {
         }
         .background(SLBackground())
         .presentationDragIndicator(.visible)
+        .paywallSheet(isPresented: $showPaywall)
     }
 
     private var sheetHeader: some View {
@@ -100,7 +102,11 @@ struct CreateCollectionView: View {
             _ = try await sdk.collections.create(form: form)
             dismiss()
         } catch {
-            errorMessage = (error as NSError).localizedDescription
+            if error.isFreePlanLimit {
+                showPaywall = true
+            } else {
+                errorMessage = (error as NSError).localizedDescription
+            }
         }
     }
 }

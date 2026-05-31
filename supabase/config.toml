@@ -1,0 +1,6 @@
+project_id = "xoirfmhmajkhcrdrsxen"
+
+# RevenueCat sends a static Authorization header, not a Supabase JWT, so the
+# gateway must not enforce JWT verification on this function.
+[functions.revenuecat-webhook]
+verify_jwt = false

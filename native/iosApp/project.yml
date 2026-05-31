@@ -10,12 +10,19 @@ settings:
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
     DEVELOPMENT_TEAM: ""
+packages:
+  RevenueCat:
+    url: https://github.com/RevenueCat/purchases-ios-spm.git
+    from: "5.0.0"
 targets:
   ChefVault:
     type: application
     platform: iOS
     sources:
       - path: ChefVault
+    dependencies:
+      - package: RevenueCat
+        product: RevenueCat
     configFiles:
       Debug: Secrets.xcconfig
       Release: Secrets.xcconfig
@@ -28,6 +35,7 @@ targets:
           UIApplicationSupportsMultipleScenes: false
         SUPABASE_HOST: $(SUPABASE_HOST)
         SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)
+        REVENUECAT_PUBLIC_SDK_KEY: $(REVENUECAT_PUBLIC_SDK_KEY)
         CFBundleURLTypes:
           - CFBundleURLSchemes: [chefvault]
         UIAppFonts:

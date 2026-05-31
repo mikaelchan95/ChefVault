@@ -23,3 +23,6 @@ Thumbs.db
 
 # Research scratch (firecrawl best-practices pass)
 .firecrawl/
+
+# Claude Design handoff bundle (re-downloadable)
+.design/

@@ -14,6 +14,7 @@ final class AuthViewModel {
 
     var screen: Screen = .loading
     var userEmail: String = ""
+    var userId: String = ""
     var errorMessage: String?
     var isBusy = false
 
@@ -28,9 +29,11 @@ final class AuthViewModel {
             case .loading:
                 screen = .loading
             case .notAuthenticated:
+                userId = ""
                 screen = .unauthenticated
             case .authenticated(let authed):
                 userEmail = authed.email
+                userId = authed.userId
                 screen = .authenticated
             }
         }

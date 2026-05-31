@@ -12,4 +12,10 @@ enum AppConfig {
         let url = host.isEmpty ? "" : "https://\(host)"
         return ChefVaultSDK(config: SupabaseConfig(url: url, anonKey: key))
     }
+
+    /// RevenueCat iOS public SDK key, injected via `Secrets.xcconfig` → Info.plist.
+    static func revenueCatKey() -> String {
+        let info = Bundle.main.infoDictionary
+        return (info?["REVENUECAT_PUBLIC_SDK_KEY"] as? String)?.trimmingCharacters(in: .whitespaces) ?? ""
+    }
 }

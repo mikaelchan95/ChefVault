@@ -141,7 +141,7 @@ struct SettingsView: View {
             }
             SLDivider()
             SLSetRow(label: "Subscription", value: isPro ? "Pro" : "Free") {
-                SubscriptionView(vm: vm)
+                SubscriptionView()
             }
             SLDivider()
             SLSetRow(label: "Security & Password", value: "Manage") {
