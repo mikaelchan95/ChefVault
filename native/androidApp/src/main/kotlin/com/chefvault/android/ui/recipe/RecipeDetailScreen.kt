@@ -112,6 +112,7 @@ fun RecipeDetailScreen(sdk: ChefVaultSDK, recipeId: String, onBack: () -> Unit, 
                 HeroImage(recipe)
                 TitleScaling(recipe, servings, onServings = { servings = it }, system, onSystem = { system = it })
                 MetaStrip(recipe, servings)
+                DescriptionText(recipe)
                 SourceLink(recipe)
                 IngredientsSection(scaled, recipe, ratio, showCost)
                 if (recipe.steps.isNotEmpty()) MethodSection(recipe.steps)
@@ -258,6 +259,13 @@ private fun MetaStrip(recipe: Recipe, servings: Int) {
             }
         }
     }
+}
+
+@Composable
+private fun DescriptionText(recipe: Recipe) {
+    val sl = LocalSl.current
+    val d = recipe.description?.takeIf { it.isNotBlank() } ?: return
+    Text(d, style = slBody(13.5).copy(lineHeight = 19.sp), color = sl.muted)
 }
 
 @Composable

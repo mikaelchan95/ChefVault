@@ -35,9 +35,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -198,7 +200,17 @@ private fun SlRecipeRow(recipe: Recipe, onClick: () -> Unit) {
 
     SlCard(modifier = Modifier.clickable { onClick() }, padding = 11) {
         Row(horizontalArrangement = Arrangement.spacedBy(13.dp), verticalAlignment = Alignment.CenterVertically) {
-            SlTile(letter = recipe.title.take(1).uppercase(), tone = tone, sizeDp = 60)
+            val img = recipe.imageUrl?.takeIf { it.isNotBlank() }
+            if (img != null) {
+                AsyncImage(
+                    model = img,
+                    contentDescription = recipe.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(60.dp).clip(RoundedCornerShape(14.dp)).border(1.dp, sl.line2, RoundedCornerShape(14.dp)),
+                )
+            } else {
+                SlTile(letter = recipe.title.take(1).uppercase(), tone = tone, sizeDp = 60)
+            }
             Column(verticalArrangement = Arrangement.spacedBy(5.dp), modifier = Modifier.weight(1f)) {
                 Text(recipe.title, style = slDisplay(15.5, FontWeight.Bold), color = sl.text, maxLines = 2)
                 Text(meta, style = slBody(11.5), color = sl.muted, maxLines = 1)

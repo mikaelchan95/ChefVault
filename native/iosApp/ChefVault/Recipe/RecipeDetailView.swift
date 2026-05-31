@@ -69,6 +69,7 @@ struct RecipeDetailView: View {
                         heroImage(recipe)
                         titleAndScaling(recipe)
                         metaStrip(recipe)
+                        descriptionText(recipe)
                         sourceLink(recipe)
                         ingredientsSection(recipe)
                         if !recipe.steps.isEmpty { methodSection(recipe) }
@@ -223,6 +224,19 @@ struct RecipeDetailView: View {
                 .overlay(Capsule().strokeBorder(SL.line, lineWidth: 1))
             }
             Spacer(minLength: 0)
+        }
+    }
+
+    // MARK: - Description / notes
+
+    @ViewBuilder
+    private func descriptionText(_ recipe: Recipe) -> some View {
+        if let d = recipe.description_?.nilIfBlank {
+            Text(d)
+                .font(SL.body(13.5))
+                .lineSpacing(13.5 * 0.4)
+                .foregroundStyle(SL.muted)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 

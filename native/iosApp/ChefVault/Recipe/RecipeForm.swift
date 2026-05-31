@@ -117,6 +117,7 @@ struct RecipeFormView: View {
                     titleSection
                     cuisineSection
                     timingSection
+                    descriptionSection
                     SLDivider()
                     ingredientsSection
                     SLDivider()
@@ -194,6 +195,19 @@ struct RecipeFormView: View {
                 set: { servings = max(1, min(100, Int($0) ?? servings)) }))
             monoField(kicker: "Prep", text: $prepTime)
             monoField(kicker: "Cook", text: $cookTime)
+        }
+    }
+
+    private var descriptionSection: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            SLKicker("Notes")
+            TextField("", text: $description, prompt: Text("Description or notes (optional)").foregroundColor(SL.faint), axis: .vertical)
+                .font(SL.body(13.5)).foregroundStyle(SL.text)
+                .lineLimit(2...)
+                .padding(11)
+                .frame(maxWidth: .infinity, minHeight: 60, alignment: .topLeading)
+                .background(SL.surface, in: RoundedRectangle(cornerRadius: SL.R.sm))
+                .overlay(RoundedRectangle(cornerRadius: SL.R.sm).strokeBorder(SL.line2, lineWidth: 1))
         }
     }
 

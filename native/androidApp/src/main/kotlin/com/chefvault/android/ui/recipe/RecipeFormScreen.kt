@@ -108,7 +108,7 @@ fun RecipeFormScreen(
     var servings by remember { mutableStateOf((existing?.servings ?: draft?.servings ?: 4).toString()) }
     var prep by remember { mutableStateOf((existing?.prepTime ?: draft?.prepTime)?.toString() ?: "") }
     var cook by remember { mutableStateOf((existing?.cookTime ?: draft?.cookTime)?.toString() ?: "") }
-    val description = remember { existing?.description ?: draft?.description ?: "" }
+    var description by remember { mutableStateOf(existing?.description ?: draft?.description ?: "") }
     val photos = remember { mutableStateListOf<String>().apply { (existing?.platingPhotos ?: draft?.platingPhotos)?.let { addAll(it) } } }
     val ingredients = remember {
         mutableStateListOf<DraftIngredient>().apply {
@@ -222,6 +222,12 @@ fun RecipeFormScreen(
                         MonoField("Servings", servings, { servings = it.filter(Char::isDigit) }, Modifier.weight(1f))
                         MonoField("Prep", prep, { prep = it.filter(Char::isDigit) }, Modifier.weight(1f))
                         MonoField("Cook", cook, { cook = it.filter(Char::isDigit) }, Modifier.weight(1f))
+                    }
+                }
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        SlKicker("Notes")
+                        FormField(description, { description = it }, "Description or notes (optional)", singleLine = false, minHeight = 60)
                     }
                 }
                 item { SlDivider() }
