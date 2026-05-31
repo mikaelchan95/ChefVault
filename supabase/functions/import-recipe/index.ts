@@ -9,13 +9,18 @@
 //   FIRECRAWL_API_KEY — optional but recommended. Scrapes recipe blogs (handles JS + bot walls
 //                       that block a plain fetch). Falls back to direct fetch if absent.
 //
-// Output: snake_case JSON matching the app's NewRecipe wire shape. Always returns
-// `source_url` + `warnings`. verify_jwt = true (see config.toml).
+// Video path: resolve → fetch bytes transiently → small clips go inline, larger ones via the
+// Gemini File API (upload → poll until ACTIVE → reference). Media is never re-hosted; only the
+// extracted recipe + source_url persist. verify_jwt = true (see config.toml).
 
 import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
-const GEMINI_MODEL = "gemini-2.0-flash";
-const MAX_INLINE_BYTES = 18 * 1024 * 1024; // ~18MB inline cap (short clips); larger → File API (TODO)
+const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta";
+const GEMINI_UPLOAD = "https://generativelanguage.googleapis.com/upload/v1beta/files";
+// Inline base64 inflates ~33%, and Gemini caps a generateContent request near 20MB total —
+// so anything above this goes through the File API instead.
+const INLINE_LIMIT = 12 * 1024 * 1024;
 
 // Default Apify actors per platform. Override with the RESOLVER_ACTOR env (~ form).
 const RESOLVER_ACTORS: Record<string, string> = {
@@ -29,6 +34,7 @@ const SYSTEM_PROMPT =
   "keep steps short and ordered. Do NOT invent ingredients or steps that aren't present. " +
   "If a value can't be determined, omit it and add a short note to `warnings`. Respond in English.";
 
+// Gemini responseSchema — property names are snake_case so the JSON matches the app wire shape.
 const RECIPE_SCHEMA = {
   type: "object",
   properties: {
@@ -120,15 +126,13 @@ Deno.serve(async (req) => {
       const { videoUrl, caption } = await resolveVideo(url, kind, warnings);
       if (videoUrl) {
         const bytes = await fetchBytes(videoUrl);
-        if (bytes.byteLength > MAX_INLINE_BYTES) {
-          warnings.push("Video too large to analyze fully; used the caption.");
-          recipe = await geminiExtract(geminiKey, [{ text: captionPrompt(caption) }], warnings);
-        } else {
-          recipe = await geminiExtract(geminiKey, [
-            { inline_data: { mime_type: "video/mp4", data: encodeBase64(bytes) } },
-            { text: `Caption: ${caption || "(none)"}\nWatch this cooking video (read on-screen text too) and extract the recipe.` },
-          ], warnings);
-        }
+        const videoPart = bytes.byteLength <= INLINE_LIMIT
+          ? { inline_data: { mime_type: "video/mp4", data: encodeBase64(bytes) } }
+          : { file_data: { mime_type: "video/mp4", file_uri: await uploadVideoToGemini(geminiKey, bytes) } };
+        recipe = await geminiExtract(geminiKey, [
+          videoPart,
+          { text: `Caption: ${caption || "(none)"}\nWatch this cooking video (read on-screen text too) and extract the recipe.` },
+        ], warnings);
       } else if (caption) {
         warnings.push("Couldn't read the video itself; extracted from the caption only.");
         recipe = await geminiExtract(geminiKey, [{ text: captionPrompt(caption) }], warnings);
@@ -155,7 +159,7 @@ async function geminiExtract(
   warnings: string[],
 ): Promise<Record<string, unknown>> {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`,
+    `${GEMINI_BASE}/models/${GEMINI_MODEL}:generateContent?key=${key}`,
     {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -185,6 +189,49 @@ async function geminiExtract(
   }
 }
 
+// Upload video bytes to the Gemini File API (resumable), wait until ACTIVE, return the file URI.
+// Used for clips too large for an inline request.
+async function uploadVideoToGemini(key: string, bytes: Uint8Array, mime = "video/mp4"): Promise<string> {
+  const start = await fetch(`${GEMINI_UPLOAD}?key=${key}`, {
+    method: "POST",
+    headers: {
+      "X-Goog-Upload-Protocol": "resumable",
+      "X-Goog-Upload-Command": "start",
+      "X-Goog-Upload-Header-Content-Length": String(bytes.byteLength),
+      "X-Goog-Upload-Header-Content-Type": mime,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ file: { display_name: "chefvault-import" } }),
+  });
+  if (!start.ok) throw new Error(`File API start ${start.status}: ${(await start.text()).slice(0, 200)}`);
+  const uploadUrl = start.headers.get("x-goog-upload-url");
+  if (!uploadUrl) throw new Error("File API: no upload URL returned.");
+
+  const up = await fetch(uploadUrl, {
+    method: "POST",
+    headers: { "X-Goog-Upload-Offset": "0", "X-Goog-Upload-Command": "upload, finalize" },
+    body: bytes,
+  });
+  if (!up.ok) throw new Error(`File API upload ${up.status}: ${(await up.text()).slice(0, 200)}`);
+  const info = await up.json();
+  const name: string | undefined = info?.file?.name;
+  let uri: string | undefined = info?.file?.uri;
+  let state: string | undefined = info?.file?.state;
+  if (!name || !uri) throw new Error("File API: missing file uri/name.");
+
+  // Video must finish PROCESSING before it can be referenced.
+  for (let i = 0; state !== "ACTIVE" && i < 30; i++) {
+    if (state === "FAILED") throw new Error("File API: video processing failed.");
+    await new Promise((r) => setTimeout(r, 2000));
+    const st = await fetch(`${GEMINI_BASE}/${name}?key=${key}`);
+    const sj = await st.json().catch(() => ({}));
+    state = sj?.state ?? sj?.file?.state;
+    uri = sj?.uri ?? sj?.file?.uri ?? uri;
+  }
+  if (state !== "ACTIVE") throw new Error("File API: video processing timed out.");
+  return uri;
+}
+
 // ---- TikTok / Instagram resolver (Apify; actor auto-picked per platform) ----
 
 async function resolveVideo(
@@ -198,10 +245,11 @@ async function resolveVideo(
     return {};
   }
   const actor = Deno.env.get("RESOLVER_ACTOR") || RESOLVER_ACTORS[kind];
-  // Each actor takes a different input shape.
+  // Each actor takes a different input shape. shouldDownloadVideos makes the TikTok actor
+  // mirror the clip into its (private) key-value store and expose it via mediaUrls.
   const input = kind === "instagram"
     ? { directUrls: [url], resultsType: "posts", resultsLimit: 1 }
-    : { postURLs: [url], resultsPerPage: 1, shouldDownloadVideos: false };
+    : { postURLs: [url], resultsPerPage: 1, shouldDownloadVideos: true };
   const res = await fetch(
     `https://api.apify.com/v2/acts/${actor}/run-sync-get-dataset-items?token=${token}`,
     {
@@ -216,11 +264,15 @@ async function resolveVideo(
   }
   const items = await res.json().catch(() => []);
   const it = Array.isArray(items) ? (items[0] ?? {}) : {};
-  // Field names vary by actor; try the common ones (tweak if a real link returns empty).
-  const videoUrl = it.videoUrl ??
-    it.videoMeta?.downloadAddr ??
+  // IG: top-level videoUrl (Meta CDN). TikTok: mediaUrls[0] / videoMeta.downloadAddr point to
+  // the Apify key-value store (when shouldDownloadVideos is on).
+  let videoUrl: string | undefined = it.videoUrl ??
     (Array.isArray(it.mediaUrls) ? it.mediaUrls[0] : undefined) ??
-    it.downloadUrl ?? it.mediaUrl ?? it.video?.url;
+    it.videoMeta?.downloadAddr ?? it.downloadUrl ?? it.mediaUrl ?? it.video?.url;
+  // Apify KVS records are private — authenticate the fetch with the same token.
+  if (videoUrl && videoUrl.includes("api.apify.com") && !/[?&]token=/.test(videoUrl)) {
+    videoUrl += (videoUrl.includes("?") ? "&" : "?") + "token=" + token;
+  }
   const caption = it.text ?? it.caption ?? it.description ?? it.title ?? "";
   return { videoUrl, caption };
 }
