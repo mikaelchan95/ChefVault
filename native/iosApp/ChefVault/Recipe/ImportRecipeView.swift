@@ -30,7 +30,7 @@ struct ImportRecipeView: View {
 
     private var pasteForm: some View {
         VStack(spacing: 0) {
-            SLSubHeader(title: "Import from Link") { dismiss() }
+            SLSubHeader(title: "Import from Link", back: "Close") { dismiss() }
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     SLKicker("Paste a link")
