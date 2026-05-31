@@ -5,8 +5,8 @@
 // Secrets (set with `supabase secrets set …`):
 //   GEMINI_API_KEY   — required. Powers video "watching" + text structuring (Gemini).
 //   RESOLVER_API_KEY — Apify token, to resolve TikTok/IG share links → media + caption.
-//   RESOLVER_ACTOR   — Apify actor id, e.g. "clockworks~tiktok-scraper" (per-platform; the
-//                      output mapping in resolveVideo() may need tweaking per chosen actor).
+//                      The actor is auto-picked per platform (see RESOLVER_ACTORS);
+//                      override with RESOLVER_ACTOR (the "user~actor" form) if desired.
 //
 // Output: snake_case JSON matching the app's NewRecipe wire shape (the supabase-kt client
 // decodes it with the SnakeCase naming strategy). Always returns `source_url` + `warnings`.
@@ -17,6 +17,12 @@ import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 const GEMINI_MODEL = "gemini-2.0-flash";
 const MAX_INLINE_BYTES = 18 * 1024 * 1024; // ~18MB inline cap (short clips); larger → File API (TODO)
+
+// Default Apify actors per platform. Override either with the RESOLVER_ACTOR env (~ form).
+const RESOLVER_ACTORS: Record<string, string> = {
+  tiktok: "clockworks~tiktok-scraper",
+  instagram: "apify~instagram-scraper",
+};
 
 const SYSTEM_PROMPT =
   "You are a precise recipe extractor. From the provided cooking video and/or its caption, " +
@@ -111,7 +117,7 @@ Deno.serve(async (req) => {
       ], warnings);
     } else {
       // TikTok / Instagram: resolve the share link → media + caption, then let Gemini watch it.
-      const { videoUrl, caption } = await resolveVideo(url, warnings);
+      const { videoUrl, caption } = await resolveVideo(url, kind, warnings);
       if (videoUrl) {
         const bytes = await fetchBytes(videoUrl);
         if (bytes.byteLength > MAX_INLINE_BYTES) {
@@ -179,24 +185,29 @@ async function geminiExtract(
   }
 }
 
-// ---- TikTok / Instagram resolver (Apify; output mapping may need per-actor tweaks) ----
+// ---- TikTok / Instagram resolver (Apify; actor auto-picked per platform) ----
 
 async function resolveVideo(
   url: string,
+  kind: "tiktok" | "instagram",
   warnings: string[],
 ): Promise<{ videoUrl?: string; caption?: string }> {
   const token = Deno.env.get("RESOLVER_API_KEY");
-  const actor = Deno.env.get("RESOLVER_ACTOR");
-  if (!token || !actor) {
-    warnings.push("Video resolver not configured (set RESOLVER_API_KEY + RESOLVER_ACTOR).");
+  if (!token) {
+    warnings.push("Video resolver not configured (set RESOLVER_API_KEY).");
     return {};
   }
+  const actor = Deno.env.get("RESOLVER_ACTOR") || RESOLVER_ACTORS[kind];
+  // Each actor takes a different input shape.
+  const input = kind === "instagram"
+    ? { directUrls: [url], resultsType: "posts", resultsLimit: 1 }
+    : { postURLs: [url], resultsPerPage: 1, shouldDownloadVideos: false };
   const res = await fetch(
     `https://api.apify.com/v2/acts/${actor}/run-sync-get-dataset-items?token=${token}`,
     {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ postURLs: [url], startUrls: [{ url }], resultsLimit: 1 }),
+      body: JSON.stringify(input),
     },
   );
   if (!res.ok) {
@@ -205,9 +216,11 @@ async function resolveVideo(
   }
   const items = await res.json().catch(() => []);
   const it = Array.isArray(items) ? (items[0] ?? {}) : {};
-  // Common field names across TikTok/IG actors; adjust to the chosen actor's schema.
-  const videoUrl = it.videoUrl ?? it.videoMeta?.downloadAddr ?? it.downloadUrl ??
-    it.mediaUrl ?? (Array.isArray(it.mediaUrls) ? it.mediaUrls[0] : undefined);
+  // Field names vary by actor; try the common ones (tweak if a real link returns empty).
+  const videoUrl = it.videoUrl ??
+    it.videoMeta?.downloadAddr ??
+    (Array.isArray(it.mediaUrls) ? it.mediaUrls[0] : undefined) ??
+    it.downloadUrl ?? it.mediaUrl ?? it.video?.url;
   const caption = it.text ?? it.caption ?? it.description ?? it.title ?? "";
   return { videoUrl, caption };
 }
