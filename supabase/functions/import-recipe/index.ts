@@ -21,6 +21,8 @@ const GEMINI_UPLOAD = "https://generativelanguage.googleapis.com/upload/v1beta/f
 // Inline base64 inflates ~33%, and Gemini caps a generateContent request near 20MB total —
 // so anything above this goes through the File API instead.
 const INLINE_LIMIT = 12 * 1024 * 1024;
+// Hard ceiling on a downloaded clip — keeps a giant file from OOM-ing the worker (~256MB).
+const MAX_VIDEO_BYTES = 80 * 1024 * 1024;
 
 // Default Apify actors per platform. Override with the RESOLVER_ACTOR env (~ form).
 const RESOLVER_ACTORS: Record<string, string> = {
@@ -88,12 +90,38 @@ function classify(url: string): "youtube" | "tiktok" | "instagram" | "article" {
   return "article";
 }
 
+// SSRF guard: reject obviously non-public hosts (loopback, private, link-local incl. the cloud
+// metadata IP, ULA, *.internal/localhost) before any server-side fetch of a (possibly attacker-
+// controlled) URL. Literal-host check — DNS-rebind is a residual we accept for now.
+function assertPublicHost(rawUrl: string): void {
+  let u: URL;
+  try {
+    u = new URL(rawUrl);
+  } catch {
+    throw new Error("Invalid URL.");
+  }
+  if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("Unsupported URL scheme.");
+  const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  const blocked =
+    host === "localhost" || host.endsWith(".localhost") || host.endsWith(".internal") ||
+    host === "metadata.google.internal" || host === "0.0.0.0" ||
+    /^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host) || /^169\.254\./.test(host) ||
+    host === "::1" || host.startsWith("fc") || host.startsWith("fd") || host.startsWith("fe80");
+  if (blocked) throw new Error("That URL points to a non-public address.");
+}
+
 Deno.serve(async (req) => {
   let url: string | undefined;
   try {
     url = (await req.json())?.url;
   } catch { /* ignore */ }
   if (!url || !/^https?:\/\//i.test(url)) return json({ error: "Provide a valid URL." }, 400);
+  try {
+    assertPublicHost(url);
+  } catch (e) {
+    return json({ error: e instanceof Error ? e.message : "Invalid URL." }, 400);
+  }
 
   const geminiKey = Deno.env.get("GEMINI_API_KEY");
   if (!geminiKey) return json({ error: "GEMINI_API_KEY is not configured." }, 500);
@@ -124,24 +152,39 @@ Deno.serve(async (req) => {
     } else {
       // TikTok / Instagram: resolve the share link → media + caption, then let Gemini watch it.
       const { videoUrl, caption } = await resolveVideo(url, kind, warnings);
+      let videoPart: unknown = null;
       if (videoUrl) {
-        const bytes = await fetchBytes(videoUrl);
-        const videoPart = bytes.byteLength <= INLINE_LIMIT
-          ? { inline_data: { mime_type: "video/mp4", data: encodeBase64(bytes) } }
-          : { file_data: { mime_type: "video/mp4", file_uri: await uploadVideoToGemini(geminiKey, bytes) } };
+        try {
+          const bytes = await fetchBytes(videoUrl);
+          videoPart = bytes.byteLength <= INLINE_LIMIT
+            ? { inline_data: { mime_type: "video/mp4", data: encodeBase64(bytes) } }
+            : { file_data: { mime_type: "video/mp4", file_uri: await uploadVideoToGemini(geminiKey, bytes) } };
+        } catch (e) {
+          // Degrade to the caption rather than failing the whole import.
+          warnings.push(`Couldn't process the video (${e instanceof Error ? e.message : "error"}); using the caption.`);
+        }
+      }
+      if (videoPart) {
         recipe = await geminiExtract(geminiKey, [
           videoPart,
           { text: `Caption: ${caption || "(none)"}\nWatch this cooking video (read on-screen text too) and extract the recipe.` },
         ], warnings);
       } else if (caption) {
-        warnings.push("Couldn't read the video itself; extracted from the caption only.");
+        if (!videoUrl) warnings.push("Couldn't read the video itself; extracted from the caption only.");
         recipe = await geminiExtract(geminiKey, [{ text: captionPrompt(caption) }], warnings);
       } else {
         return json({ error: "Couldn't read a recipe from this link.", warnings }, 422);
       }
     }
 
-    return json({ ...normalize(recipe), source_url: url, warnings });
+    // Carry any recipe-level notes (e.g. JSON-LD "no ingredients") through to the client.
+    const out = normalize(recipe);
+    const allWarnings = [...warnings, ...asArray(recipe?.warnings).map((w) => String(w))];
+    // A draft with neither ingredients nor steps is a failure, not a (blank) success.
+    if ((out.ingredients as unknown[]).length === 0 && (out.steps as unknown[]).length === 0) {
+      return json({ error: "Couldn't extract a recipe from this link.", warnings: allWarnings }, 422);
+    }
+    return json({ ...out, source_url: url, warnings: allWarnings });
   } catch (e) {
     return json({ error: (e instanceof Error ? e.message : String(e)), warnings }, 500);
   }
@@ -172,13 +215,18 @@ async function geminiExtract(
           temperature: 0.2,
         },
       }),
+      // Generous: watching a video can legitimately take a while; the platform wall-clock is the
+      // real backstop. The tight bounds that matter are on the resolver + File-API poll.
+      signal: AbortSignal.timeout(150_000),
     },
   );
   if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 300)}`);
   const data = await res.json();
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) {
-    warnings.push("The model returned no recipe.");
+    // Surface why (safety/recitation block, no candidate, …) instead of a blank recipe.
+    const reason = data?.candidates?.[0]?.finishReason ?? data?.promptFeedback?.blockReason;
+    warnings.push(reason ? `The model returned no recipe (${reason}).` : "The model returned no recipe.");
     return {};
   }
   try {
@@ -202,6 +250,7 @@ async function uploadVideoToGemini(key: string, bytes: Uint8Array, mime = "video
       "content-type": "application/json",
     },
     body: JSON.stringify({ file: { display_name: "chefvault-import" } }),
+    signal: AbortSignal.timeout(30_000),
   });
   if (!start.ok) throw new Error(`File API start ${start.status}: ${(await start.text()).slice(0, 200)}`);
   const uploadUrl = start.headers.get("x-goog-upload-url");
@@ -211,6 +260,7 @@ async function uploadVideoToGemini(key: string, bytes: Uint8Array, mime = "video
     method: "POST",
     headers: { "X-Goog-Upload-Offset": "0", "X-Goog-Upload-Command": "upload, finalize" },
     body: bytes,
+    signal: AbortSignal.timeout(90_000),
   });
   if (!up.ok) throw new Error(`File API upload ${up.status}: ${(await up.text()).slice(0, 200)}`);
   const info = await up.json();
@@ -219,11 +269,12 @@ async function uploadVideoToGemini(key: string, bytes: Uint8Array, mime = "video
   let state: string | undefined = info?.file?.state;
   if (!name || !uri) throw new Error("File API: missing file uri/name.");
 
-  // Video must finish PROCESSING before it can be referenced.
+  // Video must finish PROCESSING before it can be referenced (cap the wait ~60s).
   for (let i = 0; state !== "ACTIVE" && i < 30; i++) {
     if (state === "FAILED") throw new Error("File API: video processing failed.");
     await new Promise((r) => setTimeout(r, 2000));
-    const st = await fetch(`${GEMINI_BASE}/${name}?key=${key}`);
+    const st = await fetch(`${GEMINI_BASE}/${name}?key=${key}`, { signal: AbortSignal.timeout(15_000) });
+    if (!st.ok) continue; // transient blip — retry next tick
     const sj = await st.json().catch(() => ({}));
     state = sj?.state ?? sj?.file?.state;
     uri = sj?.uri ?? sj?.file?.uri ?? uri;
@@ -250,20 +301,31 @@ async function resolveVideo(
   const input = kind === "instagram"
     ? { directUrls: [url], resultsType: "posts", resultsLimit: 1 }
     : { postURLs: [url], resultsPerPage: 1, shouldDownloadVideos: true };
-  const res = await fetch(
-    `https://api.apify.com/v2/acts/${actor}/run-sync-get-dataset-items?token=${token}`,
-    {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(input),
-    },
-  );
+  let res: Response;
+  try {
+    res = await fetch(
+      `https://api.apify.com/v2/acts/${actor}/run-sync-get-dataset-items?token=${token}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(input),
+        signal: AbortSignal.timeout(90_000),
+      },
+    );
+  } catch {
+    warnings.push("The video resolver timed out — try again, or the post may be unavailable.");
+    return {};
+  }
   if (!res.ok) {
     warnings.push(`Resolver error ${res.status}.`);
     return {};
   }
   const items = await res.json().catch(() => []);
-  const it = Array.isArray(items) ? (items[0] ?? {}) : {};
+  if (!Array.isArray(items) || items.length === 0) {
+    warnings.push("The post returned no data — it may be private, deleted, or region-locked.");
+    return {};
+  }
+  const it = items[0] ?? {};
   // IG: top-level videoUrl (Meta CDN). TikTok: mediaUrls[0] / videoMeta.downloadAddr point to
   // the Apify key-value store (when shouldDownloadVideos is on).
   let videoUrl: string | undefined = it.videoUrl ??
@@ -287,14 +349,18 @@ async function scrapeArticle(url: string, warnings: string[]): Promise<{ html: s
         method: "POST",
         headers: { "content-type": "application/json", authorization: `Bearer ${fcKey}` },
         body: JSON.stringify({ url, formats: ["rawHtml", "markdown"], onlyMainContent: true }),
+        signal: AbortSignal.timeout(60_000),
       });
       if (res.ok) {
         const data = await res.json();
         const d = data?.data ?? {};
-        // rawHtml keeps the ld+json scripts (for JSON-LD); markdown is clean text for Gemini.
-        return { html: String(d.rawHtml ?? d.html ?? ""), text: String(d.markdown ?? "") };
+        const html = String(d.rawHtml ?? d.html ?? "");
+        const text = String(d.markdown ?? "");
+        if (html || text) return { html, text }; // rawHtml keeps ld+json; markdown feeds Gemini
+        warnings.push("Scraper returned an empty page; trying a direct fetch.");
+      } else {
+        warnings.push(`Scraper error ${res.status}; trying a direct fetch.`);
       }
-      warnings.push(`Scraper error ${res.status}; trying a direct fetch.`);
     } catch {
       warnings.push("Scraper failed; trying a direct fetch.");
     }
@@ -307,15 +373,21 @@ async function fetchText(url: string): Promise<string> {
   const res = await fetch(url, {
     headers: { "user-agent": "Mozilla/5.0 (compatible; ChefVaultImporter/1.0)" },
     redirect: "follow",
+    signal: AbortSignal.timeout(30_000),
   });
-  if (!res.ok) throw new Error(`Fetch ${res.status} for ${url}`);
+  if (!res.ok) throw new Error(`Fetch failed (${res.status}).`);
   return await res.text();
 }
 
 async function fetchBytes(url: string): Promise<Uint8Array> {
-  const res = await fetch(url, { redirect: "follow" });
+  assertPublicHost(url);
+  const res = await fetch(url, { redirect: "follow", signal: AbortSignal.timeout(90_000) });
   if (!res.ok) throw new Error(`Media fetch ${res.status}`);
-  return new Uint8Array(await res.arrayBuffer());
+  const declared = Number(res.headers.get("content-length") || 0);
+  if (declared && declared > MAX_VIDEO_BYTES) throw new Error("video too large");
+  const buf = new Uint8Array(await res.arrayBuffer());
+  if (buf.byteLength > MAX_VIDEO_BYTES) throw new Error("video too large");
+  return buf;
 }
 
 function extractRecipeJsonLd(html: string): Record<string, unknown> | null {
@@ -360,7 +432,8 @@ function mapJsonLdRecipe(r: Record<string, unknown>): Record<string, unknown> {
   return {
     title: r.name ?? "",
     cuisine: typeof r.recipeCuisine === "string" ? r.recipeCuisine : asArray(r.recipeCuisine)[0],
-    servings: parseInt(String(asArray(r.recipeYield)[0] ?? r.recipeYield ?? "1"), 10) || 1,
+    // Pull the first run of digits out of recipeYield ("Serves 4" → 4); fall back to 1.
+    servings: parseInt(String(asArray(r.recipeYield)[0] ?? r.recipeYield ?? "").match(/\d+/)?.[0] ?? "1", 10) || 1,
     prep_time: isoDurationToMinutes(r.prepTime),
     cook_time: isoDurationToMinutes(r.cookTime),
     description: typeof r.description === "string" ? r.description : null,
@@ -409,7 +482,13 @@ function asArray(v: unknown): unknown[] {
   return v == null ? [] : Array.isArray(v) ? v : [v];
 }
 
-// Guard the shape before returning to the app (servings ≥ 1, numeric quantities, etc.).
+function toInt(v: unknown): number | null {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.round(n) : null;
+}
+
+// Guard the shape before returning to the app: integers where the Kotlin DTO expects Int
+// (fractional values would fail decoding), servings ≥ 1, names trimmed.
 function normalize(recipe: Record<string, unknown> | null): Record<string, unknown> {
   const r = recipe ?? {};
   const ingredients = asArray(r.ingredients).map((i) => {
@@ -425,15 +504,15 @@ function normalize(recipe: Record<string, unknown> | null): Record<string, unkno
     const o = s as Record<string, unknown>;
     return {
       instruction: String(o.instruction ?? "").trim(),
-      timer_seconds: typeof o.timer_seconds === "number" ? o.timer_seconds : null,
+      timer_seconds: toInt(o.timer_seconds),
     };
   }).filter((s) => s.instruction.length > 0);
   return {
     title: String(r.title ?? "Imported recipe"),
     cuisine: r.cuisine ? String(r.cuisine) : null,
-    servings: Math.max(1, Number(r.servings) || 1),
-    prep_time: r.prep_time != null ? Number(r.prep_time) : null,
-    cook_time: r.cook_time != null ? Number(r.cook_time) : null,
+    servings: Math.max(1, toInt(r.servings) ?? 1),
+    prep_time: r.prep_time != null ? toInt(r.prep_time) : null,
+    cook_time: r.cook_time != null ? toInt(r.cook_time) : null,
     description: r.description ? String(r.description) : null,
     image_url: r.image_url ? String(r.image_url) : null,
     ingredients,
