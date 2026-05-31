@@ -28,6 +28,12 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="chefvault" />
             </intent-filter>
+            <!-- Share-to-ChefVault: a link shared from TikTok/Instagram/YouTube/browser. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
         </activity>
     </application>
 </manifest>

@@ -13,12 +13,21 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import io.ktor.client.call.body
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNamingStrategy
 
 class SupabaseRecipeRepository(
     private val client: SupabaseClient,
@@ -73,9 +82,22 @@ class SupabaseRecipeRepository(
         // Calls the `import-recipe` edge function (verify_jwt=true → the user's JWT is
         // attached automatically). Returns a draft to review; nothing is saved here.
         val response = client.functions.invoke("import-recipe") {
-            setBody(ImportRequest(url))
+            // The Functions client has no Ktor ContentNegotiation, so setBody(object)/body<T>()
+            // can't (de)serialize. Send a JSON String + header, and decode the response by hand.
+            setBody(importJson.encodeToString(ImportRequest(url)))
+            contentType(ContentType.Application.Json)
+            // Watching a video can take a while; the default 10s client timeout is far too short.
+            timeout {
+                requestTimeoutMillis = 180_000
+                socketTimeoutMillis = 180_000
+            }
         }
-        val dto = response.body<ImportResponseDto>()
+        val text = response.body<String>()
+        if (!response.status.isSuccess()) {
+            val err = runCatching { importJson.decodeFromString<ImportErrorDto>(text) }.getOrNull()
+            throw Exception(err?.error ?: "Couldn't read a recipe from that link.")
+        }
+        val dto = importJson.decodeFromString<ImportResponseDto>(text)
         val recipe = NewRecipe(
             title = dto.title,
             cuisine = dto.cuisine,
@@ -176,6 +198,20 @@ class SupabaseRecipeRepository(
 
 @Serializable
 private data class ImportRequest(val url: String)
+
+@Serializable
+private data class ImportErrorDto(
+    val error: String? = null,
+    val warnings: List<String> = emptyList(),
+)
+
+/** Wire (de)serializer for the import-recipe edge function. The Functions client installs no
+ *  ContentNegotiation, so we encode/decode by hand; snake_case mirrors the function's JSON. */
+@OptIn(ExperimentalSerializationApi::class)
+private val importJson = Json {
+    namingStrategy = JsonNamingStrategy.SnakeCase
+    ignoreUnknownKeys = true
+}
 
 @Serializable
 private data class ImportedIngredientDto(

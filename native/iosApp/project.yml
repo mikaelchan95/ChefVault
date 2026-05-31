@@ -23,6 +23,7 @@ targets:
     dependencies:
       - package: RevenueCat
         product: RevenueCat
+      - target: ShareExtension
     configFiles:
       Debug: Secrets.xcconfig
       Release: Secrets.xcconfig
@@ -46,6 +47,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.chefvault.app
+        CODE_SIGN_ENTITLEMENTS: ChefVault/ChefVault.entitlements
         FRAMEWORK_SEARCH_PATHS:
           - $(inherited)
           - $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
@@ -61,3 +63,24 @@ targets:
           export JAVA_HOME="$(/usr/libexec/java_home -v 17)"
           cd "$SRCROOT/.."
           ./gradlew :shared:embedAndSignAppleFrameworkForXcode
+  ShareExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ShareExtension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.chefvault.app.ShareExtension
+        CODE_SIGN_ENTITLEMENTS: ShareExtension/ShareExtension.entitlements
+    info:
+      path: ShareExtension/Info.generated.plist
+      properties:
+        CFBundleDisplayName: Save to ChefVault
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsWebURLWithMaxCount: 1
+              NSExtensionActivationSupportsWebPageWithMaxCount: 1
+              NSExtensionActivationSupportsText: true

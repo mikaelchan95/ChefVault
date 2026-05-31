@@ -7,6 +7,8 @@ import ChefVaultShared
 /// Service Line sub-screen styling; the form takes over the sheet once a draft is parsed.
 struct ImportRecipeView: View {
     let sdk: ChefVaultSDK
+    /// Prefilled + auto-imported when opened from a share (vs. the empty paste flow).
+    var initialUrl: String? = nil
     @Environment(\.dismiss) private var dismiss
 
     @State private var url = ""
@@ -57,9 +59,13 @@ struct ImportRecipeView: View {
         .background(SLBackground())
         .toolbar(.hidden, for: .navigationBar)
         .onAppear {
-            // Prefill from the clipboard when it holds a URL (the common "I just copied a link" case).
-            if url.isEmpty, let clip = UIPasteboard.general.string,
-               clip.lowercased().hasPrefix("http") {
+            guard url.isEmpty else { return }
+            if let initialUrl, !initialUrl.isEmpty {
+                // Shared in → prefill and import straight away.
+                url = initialUrl
+                Task { await parse() }
+            } else if let clip = UIPasteboard.general.string, clip.lowercased().hasPrefix("http") {
+                // Prefill from the clipboard (the common "I just copied a link" case).
                 url = clip
             }
         }

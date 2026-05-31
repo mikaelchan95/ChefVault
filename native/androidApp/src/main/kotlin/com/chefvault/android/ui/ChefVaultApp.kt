@@ -39,6 +39,7 @@ import com.chefvault.android.ui.auth.AuthFlow
 import com.chefvault.android.ui.collection.CollectionsTab
 import com.chefvault.android.ui.common.BusyIndicator
 import com.chefvault.android.ui.preplist.PrepListsTab
+import com.chefvault.android.ui.recipe.RecipeImportScreen
 import com.chefvault.android.ui.recipe.RecipesTab
 import com.chefvault.android.ui.settings.SettingsTab
 import com.chefvault.android.ui.theme.LocalSl
@@ -49,10 +50,14 @@ import com.chefvault.shared.data.repository.AuthState
 import kotlinx.coroutines.launch
 
 @Composable
-fun ChefVaultApp(sdk: ChefVaultSDK) {
+fun ChefVaultApp(
+    sdk: ChefVaultSDK,
+    pendingShareUrl: String? = null,
+    onShareConsumed: () -> Unit = {},
+) {
     val authState by sdk.auth.authState.collectAsStateWithLifecycle(initialValue = AuthState.Loading)
     when (authState) {
-        is AuthState.Authenticated -> MainScaffold(sdk)
+        is AuthState.Authenticated -> MainScaffold(sdk, pendingShareUrl, onShareConsumed)
         is AuthState.NotAuthenticated -> AuthFlow(sdk)
         AuthState.Loading -> Box(Modifier.fillMaxSize().background(LocalSl.current.bg), Alignment.Center) { BusyIndicator() }
     }
@@ -66,7 +71,11 @@ private enum class Tab(val label: String, val icon: ImageVector) {
 }
 
 @Composable
-private fun MainScaffold(sdk: ChefVaultSDK) {
+private fun MainScaffold(
+    sdk: ChefVaultSDK,
+    pendingShareUrl: String? = null,
+    onShareConsumed: () -> Unit = {},
+) {
     var tab by remember { mutableStateOf(Tab.Recipes) }
 
     LaunchedEffect(Unit) {
@@ -86,6 +95,12 @@ private fun MainScaffold(sdk: ChefVaultSDK) {
             Tab.Settings -> SettingsTab(sdk)
         }
         SlBottomBar(active = tab, onSelect = { tab = it }, modifier = Modifier.align(Alignment.BottomCenter))
+        // A link shared into ChefVault → full-screen import overlay (its own background covers the tabs).
+        if (pendingShareUrl != null) {
+            Box(Modifier.fillMaxSize()) {
+                RecipeImportScreen(sdk, onDone = onShareConsumed, initialUrl = pendingShareUrl)
+            }
+        }
     }
 }
 

@@ -34,7 +34,7 @@ import kotlinx.coroutines.launch
 /** Paste a TikTok/Instagram/YouTube/recipe link → parse server-side → review in the form.
  *  Mirrors iOS ImportRecipeView; reuses RecipeFormScreen for the review/save step. */
 @Composable
-fun RecipeImportScreen(sdk: ChefVaultSDK, onDone: () -> Unit) {
+fun RecipeImportScreen(sdk: ChefVaultSDK, onDone: () -> Unit, initialUrl: String? = null) {
     var draft by remember { mutableStateOf<NewRecipe?>(null) }
     var warnings by remember { mutableStateOf<List<String>>(emptyList()) }
 
@@ -42,7 +42,7 @@ fun RecipeImportScreen(sdk: ChefVaultSDK, onDone: () -> Unit) {
     if (parsed != null) {
         RecipeFormScreen(sdk, recipeId = null, onDone = onDone, draft = parsed, importWarnings = warnings)
     } else {
-        ImportPaste(sdk, onCancel = onDone, onParsed = { r, w -> warnings = w; draft = r })
+        ImportPaste(sdk, onCancel = onDone, onParsed = { r, w -> warnings = w; draft = r }, initialUrl = initialUrl)
     }
 }
 
@@ -51,6 +51,7 @@ private fun ImportPaste(
     sdk: ChefVaultSDK,
     onCancel: () -> Unit,
     onParsed: (NewRecipe, List<String>) -> Unit,
+    initialUrl: String? = null,
 ) {
     val sl = LocalSl.current
     val scope = rememberCoroutineScope()
@@ -59,10 +60,32 @@ private fun ImportPaste(
     var parsing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(Unit) {
-        // Prefill from the clipboard when it holds a URL (the common "just copied a link" case).
-        val clip = clipboard.getText()?.text
-        if (url.isBlank() && clip != null && clip.startsWith("http", ignoreCase = true)) url = clip
+    val runImport: () -> Unit = run@{
+        if (url.isBlank() || parsing) return@run
+        parsing = true
+        error = null
+        scope.launch {
+            try {
+                val result = sdk.recipes.importFromUrl(url.trim())
+                onParsed(result.recipe, result.warnings)
+            } catch (e: Exception) {
+                error = e.message ?: "Couldn't read a recipe from that link. Try another, or add it manually."
+            } finally {
+                parsing = false
+            }
+        }
+    }
+
+    LaunchedEffect(initialUrl) {
+        if (!initialUrl.isNullOrBlank()) {
+            // Shared in → prefill and import straight away.
+            url = initialUrl
+            runImport()
+        } else {
+            // Prefill from the clipboard when it holds a URL (the common "just copied a link" case).
+            val clip = clipboard.getText()?.text
+            if (url.isBlank() && clip != null && clip.startsWith("http", ignoreCase = true)) url = clip
+        }
     }
 
     SlBackground {
@@ -84,18 +107,7 @@ private fun ImportPaste(
                     enabled = url.isNotBlank() && !parsing,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    parsing = true
-                    error = null
-                    scope.launch {
-                        try {
-                            val result = sdk.recipes.importFromUrl(url.trim())
-                            onParsed(result.recipe, result.warnings)
-                        } catch (e: Exception) {
-                            error = e.message ?: "Couldn't read a recipe from that link. Try another, or add it manually."
-                        } finally {
-                            parsing = false
-                        }
-                    }
+                    runImport()
                 }
                 Text(
                     "Watches the video or reads the page to pull out ingredients and steps. Nothing is saved until you review and tap Save.",
