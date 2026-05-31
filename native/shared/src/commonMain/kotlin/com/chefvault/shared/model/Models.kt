@@ -46,6 +46,7 @@ data class Recipe(
     val description: String? = null,
     val imageUrl: String? = null,
     val platingPhotos: List<String> = emptyList(),
+    val sourceUrl: String? = null,
     val createdAt: String,
     val updatedAt: String,
     val ingredients: List<Ingredient> = emptyList(),

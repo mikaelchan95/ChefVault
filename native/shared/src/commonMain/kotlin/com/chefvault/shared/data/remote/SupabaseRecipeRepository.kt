@@ -1,17 +1,24 @@
 package com.chefvault.shared.data.remote
 
 import com.chefvault.shared.data.repository.AuthRepository
+import com.chefvault.shared.data.repository.ImportedRecipe
+import com.chefvault.shared.data.repository.NewIngredient
 import com.chefvault.shared.data.repository.NewRecipe
+import com.chefvault.shared.data.repository.NewStep
 import com.chefvault.shared.data.repository.RecipeRepository
 import com.chefvault.shared.model.Recipe
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
+import io.ktor.client.call.body
+import io.ktor.client.request.setBody
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.Serializable
 
 class SupabaseRecipeRepository(
     private val client: SupabaseClient,
@@ -50,6 +57,7 @@ class SupabaseRecipeRepository(
                     description = form.description,
                     imageUrl = form.imageUrl,
                     platingPhotos = form.platingPhotos,
+                    sourceUrl = form.sourceUrl,
                 ),
             ) { select() }
             .decodeSingle<RecipeRow>()
@@ -59,6 +67,29 @@ class SupabaseRecipeRepository(
 
         refresh()
         return _recipes.value.firstOrNull { it.id == recipeId } ?: inserted.toDomain()
+    }
+
+    override suspend fun importFromUrl(url: String): ImportedRecipe {
+        // Calls the `import-recipe` edge function (verify_jwt=true → the user's JWT is
+        // attached automatically). Returns a draft to review; nothing is saved here.
+        val response = client.functions.invoke("import-recipe") {
+            setBody(ImportRequest(url))
+        }
+        val dto = response.body<ImportResponseDto>()
+        val recipe = NewRecipe(
+            title = dto.title,
+            cuisine = dto.cuisine,
+            servings = dto.servings.coerceAtLeast(1),
+            prepTime = dto.prepTime,
+            cookTime = dto.cookTime,
+            description = dto.description,
+            imageUrl = dto.imageUrl,
+            platingPhotos = listOfNotNull(dto.imageUrl),
+            sourceUrl = dto.sourceUrl ?: url,
+            ingredients = dto.ingredients.map { NewIngredient(it.name, it.quantity, it.unit, it.notes) },
+            steps = dto.steps.map { NewStep(it.instruction, it.timerSeconds) },
+        )
+        return ImportedRecipe(recipe = recipe, warnings = dto.warnings)
     }
 
     override suspend fun update(id: String, form: NewRecipe) {
@@ -73,6 +104,7 @@ class SupabaseRecipeRepository(
                     description = form.description,
                     imageUrl = form.imageUrl,
                     platingPhotos = form.platingPhotos,
+                    sourceUrl = form.sourceUrl,
                 ),
             ) { filter { eq("id", id) } }
 
@@ -139,3 +171,37 @@ class SupabaseRecipeRepository(
         }
     }
 }
+
+// --- import-recipe edge function wire DTOs (snake_case via the client's Json strategy) ---
+
+@Serializable
+private data class ImportRequest(val url: String)
+
+@Serializable
+private data class ImportedIngredientDto(
+    val name: String,
+    val quantity: Double = 1.0,
+    val unit: String = "",
+    val notes: String? = null,
+)
+
+@Serializable
+private data class ImportedStepDto(
+    val instruction: String,
+    val timerSeconds: Int? = null,
+)
+
+@Serializable
+private data class ImportResponseDto(
+    val title: String = "",
+    val cuisine: String? = null,
+    val servings: Int = 1,
+    val prepTime: Int? = null,
+    val cookTime: Int? = null,
+    val description: String? = null,
+    val imageUrl: String? = null,
+    val sourceUrl: String? = null,
+    val ingredients: List<ImportedIngredientDto> = emptyList(),
+    val steps: List<ImportedStepDto> = emptyList(),
+    val warnings: List<String> = emptyList(),
+)

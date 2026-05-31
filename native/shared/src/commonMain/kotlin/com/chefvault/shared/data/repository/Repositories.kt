@@ -66,8 +66,15 @@ data class NewRecipe(
     val description: String? = null,
     val imageUrl: String? = null,
     val platingPhotos: List<String> = emptyList(),
+    val sourceUrl: String? = null,
     val ingredients: List<NewIngredient> = emptyList(),
     val steps: List<NewStep> = emptyList(),
+)
+
+/** Result of importing a recipe from a URL: a prefilled draft + any parse warnings. */
+data class ImportedRecipe(
+    val recipe: NewRecipe,
+    val warnings: List<String> = emptyList(),
 )
 
 interface RecipeRepository {
@@ -75,6 +82,9 @@ interface RecipeRepository {
     val recipes: StateFlow<List<Recipe>>
     @Throws(Exception::class) suspend fun refresh()
     @Throws(Exception::class) suspend fun addRecipe(form: NewRecipe): Recipe
+    /** Parses a shared URL (TikTok/Instagram/blog) into a draft recipe via the
+     *  import-recipe edge function. Returns a draft to review — does NOT save. */
+    @Throws(Exception::class) suspend fun importFromUrl(url: String): ImportedRecipe
     /** Replaces scalar fields and (wholesale) ingredients + steps, mirroring the RN store. */
     @Throws(Exception::class) suspend fun update(id: String, form: NewRecipe)
     @Throws(Exception::class) suspend fun delete(id: String)

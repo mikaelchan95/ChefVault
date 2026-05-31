@@ -68,6 +68,7 @@ struct RecipeDetailView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
                         metaGrid(recipe)
+                        sourceLink(recipe)
                         costCard(recipe)
                         ingredientsSection(recipe)
                         if !recipe.steps.isEmpty { methodSection(recipe) }
@@ -200,6 +201,26 @@ struct RecipeDetailView: View {
                 Text(value).font(SL.display(16, .bold)).foregroundStyle(SL.text).lineLimit(1)
             }
             .frame(maxWidth: .infinity)
+        }
+    }
+
+    // MARK: - Source link (imported recipes)
+
+    @ViewBuilder
+    private func sourceLink(_ recipe: Recipe) -> some View {
+        if let src = recipe.sourceUrl?.nilIfBlank, let u = URL(string: src) {
+            Link(destination: u) {
+                HStack(spacing: 6) {
+                    Image(systemName: "link").font(.system(size: 11, weight: .semibold))
+                    Text("View original").font(SL.body(12.5, .semibold))
+                    Spacer(minLength: 0)
+                    Image(systemName: "arrow.up.right").font(.system(size: 10, weight: .semibold))
+                }
+                .foregroundStyle(SL.accent)
+                .padding(.horizontal, 13).padding(.vertical, 11)
+                .background(SL.surface, in: RoundedRectangle(cornerRadius: SL.R.md))
+                .overlay(RoundedRectangle(cornerRadius: SL.R.md).strokeBorder(SL.line, lineWidth: 1))
+            }
         }
     }
 

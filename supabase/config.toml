@@ -4,3 +4,7 @@ project_id = "xoirfmhmajkhcrdrsxen"
 # gateway must not enforce JWT verification on this function.
 [functions.revenuecat-webhook]
 verify_jwt = false
+
+# Authenticated users only (default); the app attaches the signed-in user's JWT.
+[functions.import-recipe]
+verify_jwt = true

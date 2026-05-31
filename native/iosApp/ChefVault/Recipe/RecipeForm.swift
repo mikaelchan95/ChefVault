@@ -34,6 +34,10 @@ struct RecipeEditView: View {
 struct RecipeFormView: View {
     let sdk: ChefVaultSDK
     let existing: Recipe?
+    /// Original source link for an imported recipe — carried through to save (source_url).
+    let sourceUrl: String?
+    /// Parse warnings shown as a banner when reviewing an imported draft.
+    let importWarnings: [String]
     @Environment(\.dismiss) private var dismiss
 
     @State private var title: String
@@ -52,6 +56,8 @@ struct RecipeFormView: View {
     init(sdk: ChefVaultSDK, existing: Recipe?) {
         self.sdk = sdk
         self.existing = existing
+        self.sourceUrl = existing?.sourceUrl
+        self.importWarnings = []
         _title = State(initialValue: existing?.title ?? "")
         _cuisine = State(initialValue: existing?.cuisine ?? "")
         _servings = State(initialValue: Int(existing?.servings ?? 4))
@@ -66,6 +72,28 @@ struct RecipeFormView: View {
         _steps = State(initialValue: existing?.steps.map {
             DraftStep(instruction: $0.instruction, timerMinutes: $0.timerSeconds.map { t in "\(t.intValue / 60)" } ?? "")
         } ?? [DraftStep()])
+    }
+
+    /// Import path: pre-fill from a parsed draft and save as a NEW recipe.
+    init(sdk: ChefVaultSDK, draft: NewRecipe, warnings: [String] = []) {
+        self.sdk = sdk
+        self.existing = nil
+        self.sourceUrl = draft.sourceUrl
+        self.importWarnings = warnings
+        _title = State(initialValue: draft.title)
+        _cuisine = State(initialValue: draft.cuisine ?? "")
+        _servings = State(initialValue: Int(draft.servings))
+        _prepTime = State(initialValue: draft.prepTime.map { "\($0.intValue)" } ?? "")
+        _cookTime = State(initialValue: draft.cookTime.map { "\($0.intValue)" } ?? "")
+        _description = State(initialValue: draft.description_ ?? "")
+        _photos = State(initialValue: draft.platingPhotos)
+        _ingredients = State(initialValue: draft.ingredients.isEmpty ? [DraftIngredient()] : draft.ingredients.map {
+            DraftIngredient(name: $0.name, quantity: formatQuantity($0.quantity), unit: $0.unit,
+                            cost: $0.costPerUnit.map { c in formatQuantity(c.doubleValue) } ?? "")
+        })
+        _steps = State(initialValue: draft.steps.isEmpty ? [DraftStep()] : draft.steps.map {
+            DraftStep(instruction: $0.instruction, timerMinutes: $0.timerSeconds.map { t in "\(t.intValue / 60)" } ?? "")
+        })
     }
 
     private var canSave: Bool { !title.trimmingCharacters(in: .whitespaces).isEmpty && !saving }
@@ -85,6 +113,7 @@ struct RecipeFormView: View {
             header
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
+                    if !importWarnings.isEmpty { importWarningsBanner }
                     titleSection
                     cuisineSection
                     timingSection
@@ -213,6 +242,18 @@ struct RecipeFormView: View {
         }
     }
 
+    private var importWarningsBanner: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            SLKicker("Imported — please check", color: SL.accent)
+            ForEach(importWarnings, id: \.self) { w in
+                Text("• \(w)").font(SL.body(12)).foregroundStyle(SL.muted)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(SL.accentSoft, in: RoundedRectangle(cornerRadius: SL.R.sm))
+    }
+
     private func buildForm() -> NewRecipe {
         let newIngredients = ingredients
             .filter { !$0.name.trimmingCharacters(in: .whitespaces).isEmpty }
@@ -231,6 +272,7 @@ struct RecipeFormView: View {
             description: description.isEmpty ? nil : description,
             imageUrl: photos.first,
             platingPhotos: photos,
+            sourceUrl: sourceUrl,
             ingredients: newIngredients,
             steps: newSteps,
         )

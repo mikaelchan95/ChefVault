@@ -74,30 +74,53 @@ import kotlinx.coroutines.launch
 private data class DraftIngredient(val name: String = "", val quantity: String = "", val unit: String = "g", val cost: String = "")
 private data class DraftStep(val instruction: String = "", val timer: String = "")
 
+/** Banner shown above an imported draft, listing any parse warnings. */
 @Composable
-fun RecipeFormScreen(sdk: ChefVaultSDK, recipeId: String?, onDone: () -> Unit) {
+private fun ImportWarningsBanner(warnings: List<String>) {
+    val sl = LocalSl.current
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(sl.accentSoft).padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        SlKicker("Imported — please check", color = sl.accent)
+        warnings.forEach { Text("• $it", style = slBody(12.0), color = sl.muted) }
+    }
+}
+
+@Composable
+fun RecipeFormScreen(
+    sdk: ChefVaultSDK,
+    recipeId: String?,
+    onDone: () -> Unit,
+    draft: NewRecipe? = null,
+    importWarnings: List<String> = emptyList(),
+) {
     val sl = LocalSl.current
     val recipes by sdk.recipes.recipes.collectAsStateWithLifecycle()
     val existing = recipeId?.let { id -> recipes.firstOrNull { it.id == id } }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    // Imported recipes carry their original link through to save (source_url).
+    val sourceUrl = existing?.sourceUrl ?: draft?.sourceUrl
 
-    var title by remember { mutableStateOf(existing?.title ?: "") }
-    var cuisine by remember { mutableStateOf(existing?.cuisine ?: "") }
-    var servings by remember { mutableStateOf((existing?.servings ?: 4).toString()) }
-    var prep by remember { mutableStateOf(existing?.prepTime?.toString() ?: "") }
-    var cook by remember { mutableStateOf(existing?.cookTime?.toString() ?: "") }
-    val description = remember { existing?.description ?: "" }
-    val photos = remember { mutableStateListOf<String>().apply { existing?.platingPhotos?.let { addAll(it) } } }
+    var title by remember { mutableStateOf(existing?.title ?: draft?.title ?: "") }
+    var cuisine by remember { mutableStateOf(existing?.cuisine ?: draft?.cuisine ?: "") }
+    var servings by remember { mutableStateOf((existing?.servings ?: draft?.servings ?: 4).toString()) }
+    var prep by remember { mutableStateOf((existing?.prepTime ?: draft?.prepTime)?.toString() ?: "") }
+    var cook by remember { mutableStateOf((existing?.cookTime ?: draft?.cookTime)?.toString() ?: "") }
+    val description = remember { existing?.description ?: draft?.description ?: "" }
+    val photos = remember { mutableStateListOf<String>().apply { (existing?.platingPhotos ?: draft?.platingPhotos)?.let { addAll(it) } } }
     val ingredients = remember {
         mutableStateListOf<DraftIngredient>().apply {
             existing?.ingredients?.forEach { add(DraftIngredient(it.name, formatQuantity(it.quantity), it.unit, it.costPerUnit?.let { c -> formatQuantity(c) } ?: "")) }
+            if (isEmpty()) draft?.ingredients?.forEach { add(DraftIngredient(it.name, formatQuantity(it.quantity), it.unit, it.costPerUnit?.let { c -> formatQuantity(c) } ?: "")) }
             if (isEmpty()) add(DraftIngredient())
         }
     }
     val steps = remember {
         mutableStateListOf<DraftStep>().apply {
             existing?.steps?.forEach { add(DraftStep(it.instruction, it.timerSeconds?.let { s -> (s / 60).toString() } ?: "")) }
+            if (isEmpty()) draft?.steps?.forEach { add(DraftStep(it.instruction, it.timerSeconds?.let { s -> (s / 60).toString() } ?: "")) }
             if (isEmpty()) add(DraftStep())
         }
     }
@@ -129,6 +152,7 @@ fun RecipeFormScreen(sdk: ChefVaultSDK, recipeId: String?, onDone: () -> Unit) {
                 description = description.ifBlank { null },
                 imageUrl = photos.firstOrNull(),
                 platingPhotos = photos.toList(),
+                sourceUrl = sourceUrl,
                 ingredients = ingredients.filter { it.name.isNotBlank() }
                     .map { NewIngredient(it.name, it.quantity.toDoubleOrNull() ?: 0.0, it.unit, null, it.cost.toDoubleOrNull()) },
                 steps = steps.filter { it.instruction.isNotBlank() }
@@ -178,6 +202,9 @@ fun RecipeFormScreen(sdk: ChefVaultSDK, recipeId: String?, onDone: () -> Unit) {
                 contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 18.dp, bottom = 96.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
+                if (importWarnings.isNotEmpty()) {
+                    item { ImportWarningsBanner(importWarnings) }
+                }
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                         SlKicker("Title")

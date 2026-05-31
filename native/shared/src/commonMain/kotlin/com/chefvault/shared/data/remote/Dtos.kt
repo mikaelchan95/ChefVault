@@ -45,6 +45,7 @@ data class RecipeRow(
     val description: String? = null,
     val imageUrl: String? = null,
     val platingPhotos: List<String> = emptyList(),
+    val sourceUrl: String? = null,
     val createdAt: String = "",
     val updatedAt: String = "",
     val ingredients: List<IngredientRow> = emptyList(),
@@ -62,6 +63,7 @@ data class RecipeInsert(
     val description: String? = null,
     val imageUrl: String? = null,
     val platingPhotos: List<String> = emptyList(),
+    val sourceUrl: String? = null,
 )
 
 @Serializable
@@ -74,6 +76,7 @@ data class RecipeUpdate(
     val description: String? = null,
     val imageUrl: String? = null,
     val platingPhotos: List<String> = emptyList(),
+    val sourceUrl: String? = null,
 )
 
 @Serializable
@@ -125,6 +128,7 @@ fun RecipeRow.toDomain(): Recipe = Recipe(
     description = description,
     imageUrl = imageUrl,
     platingPhotos = platingPhotos,
+    sourceUrl = sourceUrl,
     createdAt = createdAt,
     updatedAt = updatedAt,
     ingredients = ingredients.sortedBy { it.sortOrder }.map { it.toDomain() },

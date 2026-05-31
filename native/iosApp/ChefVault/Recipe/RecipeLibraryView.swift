@@ -7,6 +7,7 @@ struct RecipeLibraryView: View {
     @State private var query = ""
     @State private var cuisine: String? = nil
     @State private var showCreate = false
+    @State private var showImport = false
     @State private var showSort = false
     @State private var sortBy: RecipeSort = .updated
 
@@ -56,7 +57,10 @@ struct RecipeLibraryView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 SLAppBar(title: "Recipes", kicker: "Mise en place", count: "\(vm.recipes.count)") {
-                    SLIconBtn(systemName: "slider.horizontal.3", accent: sortBy != .updated) { showSort = true }
+                    HStack(spacing: 7) {
+                        SLIconBtn(systemName: "link") { showImport = true }
+                        SLIconBtn(systemName: "slider.horizontal.3", accent: sortBy != .updated) { showSort = true }
+                    }
                 }
                 ScrollView {
                     VStack(spacing: 12) {
@@ -98,6 +102,7 @@ struct RecipeLibraryView: View {
             .task { await vm.refresh() }
             .refreshable { await vm.refresh() }
             .sheet(isPresented: $showCreate) { CreateRecipeView(sdk: sdk) }
+            .sheet(isPresented: $showImport) { ImportRecipeView(sdk: sdk) }
             .sheet(isPresented: $showSort) { sortSheet }
         }
     }

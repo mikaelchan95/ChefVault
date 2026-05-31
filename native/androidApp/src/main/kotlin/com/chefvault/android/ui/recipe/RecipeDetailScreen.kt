@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -109,6 +110,7 @@ fun RecipeDetailScreen(sdk: ChefVaultSDK, recipeId: String, onBack: () -> Unit, 
                 verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
                 MetaGrid(recipe)
+                SourceLink(recipe)
                 if (summary.totalCosted > 0) CostCard(summary)
                 IngredientsSection(scaled, recipe, ratio)
                 if (recipe.steps.isNotEmpty()) MethodSection(recipe.steps)
@@ -239,6 +241,20 @@ private fun MetaCard(kicker: String, value: String, modifier: Modifier = Modifie
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
             SlKicker(kicker)
             Text(value, style = slDisplay(16.0, FontWeight.Bold), color = sl.text, maxLines = 1)
+        }
+    }
+}
+
+@Composable
+private fun SourceLink(recipe: Recipe) {
+    val sl = LocalSl.current
+    val src = recipe.sourceUrl?.takeIf { it.isNotBlank() } ?: return
+    val uriHandler = LocalUriHandler.current
+    SlCard(modifier = Modifier.clickable { runCatching { uriHandler.openUri(src) } }) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("View original", style = slBody(12.5, FontWeight.SemiBold), color = sl.accent)
+            Box(Modifier.weight(1f))
+            Text("↗", style = slBody(13.0, FontWeight.Bold), color = sl.accent)
         }
     }
 }

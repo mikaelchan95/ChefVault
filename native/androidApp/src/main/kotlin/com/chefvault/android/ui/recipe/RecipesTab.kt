@@ -19,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -63,7 +64,12 @@ fun RecipesTab(sdk: ChefVaultSDK) {
     val nav = rememberNavController()
     NavHost(navController = nav, startDestination = "library") {
         composable("library") {
-            RecipeLibraryScreen(sdk, onOpen = { id -> nav.navigate("detail/$id") }, onCreate = { nav.navigate("create") })
+            RecipeLibraryScreen(
+                sdk,
+                onOpen = { id -> nav.navigate("detail/$id") },
+                onCreate = { nav.navigate("create") },
+                onImport = { nav.navigate("import") },
+            )
         }
         composable("detail/{id}") { entry ->
             RecipeDetailScreen(
@@ -74,6 +80,7 @@ fun RecipesTab(sdk: ChefVaultSDK) {
             )
         }
         composable("create") { RecipeFormScreen(sdk, recipeId = null, onDone = { nav.popBackStack() }) }
+        composable("import") { RecipeImportScreen(sdk, onDone = { nav.popBackStack() }) }
         composable("edit/{id}") { entry ->
             RecipeFormScreen(sdk, recipeId = entry.arguments?.getString("id"), onDone = { nav.popBackStack() })
         }
@@ -81,7 +88,7 @@ fun RecipesTab(sdk: ChefVaultSDK) {
 }
 
 @Composable
-private fun RecipeLibraryScreen(sdk: ChefVaultSDK, onOpen: (String) -> Unit, onCreate: () -> Unit) {
+private fun RecipeLibraryScreen(sdk: ChefVaultSDK, onOpen: (String) -> Unit, onCreate: () -> Unit, onImport: () -> Unit) {
     val recipes by sdk.recipes.recipes.collectAsStateWithLifecycle()
     var query by remember { mutableStateOf("") }
     var cuisine by remember { mutableStateOf<String?>(null) }
@@ -108,7 +115,10 @@ private fun RecipeLibraryScreen(sdk: ChefVaultSDK, onOpen: (String) -> Unit, onC
     SlBackground {
         Column(Modifier.fillMaxSize()) {
             SlAppBar(title = "Recipes", kicker = "Mise en place", count = "${recipes.size}") {
-                SlIconButton(Icons.Filled.Tune, accent = sortBy != RecipeSort.UPDATED) { showSort = true }
+                Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    SlIconButton(Icons.Filled.Link) { onImport() }
+                    SlIconButton(Icons.Filled.Tune, accent = sortBy != RecipeSort.UPDATED) { showSort = true }
+                }
             }
             LazyColumn(
                 contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 4.dp, bottom = 96.dp),
