@@ -64,17 +64,19 @@ struct RecipeDetailView: View {
         VStack(spacing: 0) {
             backRow
             if let recipe = vm.recipe {
-                controlBar(recipe)
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
-                        metaGrid(recipe)
+                        heroImage(recipe)
+                        titleAndScaling(recipe)
+                        metaStrip(recipe)
                         sourceLink(recipe)
-                        costCard(recipe)
                         ingredientsSection(recipe)
                         if !recipe.steps.isEmpty { methodSection(recipe) }
+                        costSection(recipe)
                         if !recipe.platingPhotos.isEmpty { platingSection(recipe) }
                     }
                     .padding(SL.Pad.screen)
+                    .padding(.top, 2)
                     .padding(.bottom, 40)
                 }
             } else {
@@ -160,12 +162,35 @@ struct RecipeDetailView: View {
         .padding(.bottom, 12)
     }
 
-    private func controlBar(_ recipe: Recipe) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+    // MARK: - Hero image (only when the recipe has one)
+
+    @ViewBuilder
+    private func heroImage(_ recipe: Recipe) -> some View {
+        if let img = recipe.imageUrl?.nilIfBlank, let u = URL(string: img) {
+            AsyncImage(url: u) { phase in
+                switch phase {
+                case .success(let image):
+                    image.resizable().aspectRatio(contentMode: .fill)
+                case .empty:
+                    ZStack { SL.surface2; ProgressView().controlSize(.small) }
+                default:
+                    ZStack { SL.surface2; Image(systemName: "photo").font(.system(size: 26)).foregroundStyle(SL.faint) }
+                }
+            }
+            .frame(height: 208)
+            .frame(maxWidth: .infinity)
+            .clipShape(RoundedRectangle(cornerRadius: SL.R.lg))
+            .overlay(RoundedRectangle(cornerRadius: SL.R.lg).strokeBorder(SL.line, lineWidth: 1))
+        }
+    }
+
+    // MARK: - Title + scaling
+
+    private func titleAndScaling(_ recipe: Recipe) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
             Text(recipe.title)
-                .font(SL.display(23, .heavy))
+                .font(SL.display(26, .heavy))
                 .tracking(-0.6)
-                .lineSpacing(23 * 0.02)
                 .foregroundStyle(SL.text)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 10) {
@@ -176,31 +201,28 @@ struct RecipeDetailView: View {
                     .frame(width: 150)
             }
         }
-        .padding(.horizontal, SL.Pad.screen)
-        .padding(.vertical, 14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(SL.surface)
-        .overlay(SL.line.frame(height: 1), alignment: .bottom)
-        .shadow(color: .black.opacity(0.18), radius: 8, y: 4)
     }
 
-    // MARK: - Meta grid
+    // MARK: - Meta strip (only the stats that exist)
 
-    private func metaGrid(_ recipe: Recipe) -> some View {
-        HStack(spacing: 10) {
-            metaCard("Cuisine", recipe.cuisine?.nilIfBlank ?? "—")
-            metaCard("Prep", recipe.prepTime.map { "\($0.intValue)m" } ?? "—")
-            metaCard("Cook", recipe.cookTime.map { "\($0.intValue)m" } ?? "—")
-        }
-    }
-
-    private func metaCard(_ kicker: String, _ value: String) -> some View {
-        SLCard(pad: SL.Pad.card, soft: true) {
-            VStack(spacing: 6) {
-                SLKicker(kicker)
-                Text(value).font(SL.display(16, .bold)).foregroundStyle(SL.text).lineLimit(1)
+    private func metaStrip(_ recipe: Recipe) -> some View {
+        let total = (recipe.prepTime?.intValue ?? 0) + (recipe.cookTime?.intValue ?? 0)
+        var chips: [(icon: String, text: String)] = []
+        if let cu = recipe.cuisine?.nilIfBlank { chips.append(("globe", cu)) }
+        if total > 0 { chips.append(("clock", "\(total) min")) }
+        chips.append(("person.2", "\(targetServings) serving\(targetServings == 1 ? "" : "s")"))
+        return HStack(spacing: 8) {
+            ForEach(chips, id: \.text) { chip in
+                HStack(spacing: 5) {
+                    Image(systemName: chip.icon).font(.system(size: 10.5, weight: .semibold))
+                    Text(chip.text).font(SL.body(12.5, .medium))
+                }
+                .foregroundStyle(SL.muted)
+                .padding(.horizontal, 11).padding(.vertical, 7)
+                .background(SL.surface, in: Capsule())
+                .overlay(Capsule().strokeBorder(SL.line, lineWidth: 1))
             }
-            .frame(maxWidth: .infinity)
+            Spacer(minLength: 0)
         }
     }
 
@@ -224,26 +246,29 @@ struct RecipeDetailView: View {
         }
     }
 
-    // MARK: - Cost analysis
+    // MARK: - Cost analysis (only when something is actually costed)
 
-    private func costCard(_ recipe: Recipe) -> some View {
+    @ViewBuilder
+    private func costSection(_ recipe: Recipe) -> some View {
         let summary = calculateRecipeCost(ingredients: recipe.ingredients, servings: Int32(recipe.servings))
-        let total = formatCurrency(amount: KotlinDouble(double: summary.totalCosted), currency: "USD")
-        let perServing = formatCurrency(amount: summary.costPerServing, currency: "USD")
-        return SLCard {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    SLKicker("Cost analysis")
-                    Text(total).font(SL.mono(24, .bold)).foregroundStyle(SL.accent)
-                    Text("\(perServing) / serving").font(SL.mono(11.5)).foregroundStyle(SL.muted)
+        if summary.costedCount > 0 {
+            let total = formatCurrency(amount: KotlinDouble(double: summary.totalCosted), currency: "USD")
+            let perServing = formatCurrency(amount: summary.costPerServing, currency: "USD")
+            SLCard {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        SLKicker("Cost analysis")
+                        Text(total).font(SL.mono(22, .bold)).foregroundStyle(SL.accent)
+                        Text("\(perServing) / serving").font(SL.mono(11.5)).foregroundStyle(SL.muted)
+                    }
+                    Spacer(minLength: 0)
+                    Text("\(summary.costedCount)/\(summary.totalCount) COSTED")
+                        .font(SL.mono(10, .bold))
+                        .foregroundStyle(SL.accent)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(SL.accentSoft, in: Capsule())
                 }
-                Spacer(minLength: 0)
-                Text("\(summary.costedCount)/\(summary.totalCount) COSTED")
-                    .font(SL.mono(10, .bold))
-                    .foregroundStyle(SL.accent)
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 5)
-                    .background(SL.accentSoft, in: Capsule())
             }
         }
     }
@@ -252,13 +277,16 @@ struct RecipeDetailView: View {
 
     private func ingredientsSection(_ recipe: Recipe) -> some View {
         let scaledList = scaled(recipe)
+        let summary = calculateRecipeCost(ingredients: recipe.ingredients, servings: Int32(recipe.servings))
+        let showCost = summary.costedCount > 0
         return VStack(alignment: .leading, spacing: 10) {
             SLKicker("Ingredients")
             VStack(spacing: 0) {
-                ingredientHeader
                 ForEach(Array(scaledList.enumerated()), id: \.offset) { index, item in
-                    ingredientRow(item, cost: lineCost(recipe.ingredients[index]))
-                        .overlay(SL.line.frame(height: 1), alignment: .top)
+                    ingredientRow(item, cost: showCost ? lineCost(recipe.ingredients[index]) : nil, showCost: showCost)
+                        .overlay(alignment: .top) {
+                            if index > 0 { SL.line.frame(height: 1) }
+                        }
                 }
             }
             .background(SL.surface, in: RoundedRectangle(cornerRadius: SL.R.md))
@@ -267,32 +295,13 @@ struct RecipeDetailView: View {
         }
     }
 
-    private var ingredientHeader: some View {
-        HStack(spacing: 0) {
-            Text("QTY").frame(width: 36, alignment: .leading)
-            Text("UNIT").frame(width: 58, alignment: .leading)
-            Text("INGREDIENT").frame(maxWidth: .infinity, alignment: .leading)
-            Text("COST").frame(width: 54, alignment: .trailing)
-        }
-        .font(SL.mono(9, .bold))
-        .tracking(0.8)
-        .foregroundStyle(SL.faint)
-        .padding(.horizontal, SL.Pad.card)
-        .padding(.vertical, 9)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(SL.surface2)
-    }
-
-    private func ingredientRow(_ item: ScaledIngredient, cost: KotlinDouble?) -> some View {
-        HStack(alignment: .top, spacing: 0) {
-            Text(formatQuantity(item.quantity))
-                .font(SL.mono(12, .bold)).foregroundStyle(SL.accent)
-                .lineLimit(1)
-                .frame(width: 36, alignment: .leading)
-            Text(item.unit)
-                .font(SL.mono(11)).foregroundStyle(SL.muted)
+    private func ingredientRow(_ item: ScaledIngredient, cost: KotlinDouble?, showCost: Bool) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            (Text(formatQuantity(item.quantity)).foregroundColor(SL.accent)
+                + Text(item.unit.isEmpty ? "" : " \(item.unit)").foregroundColor(SL.muted))
+                .font(SL.mono(12.5, .bold))
                 .lineLimit(1).minimumScaleFactor(0.6)
-                .frame(width: 58, alignment: .leading)
+                .frame(width: 92, alignment: .leading)
             Group {
                 if let notes = item.notes, !notes.isEmpty {
                     (Text(item.name).foregroundColor(SL.text)
@@ -301,46 +310,45 @@ struct RecipeDetailView: View {
                     Text(item.name).foregroundColor(SL.text)
                 }
             }
-            .font(SL.body(13))
+            .font(SL.body(13.5))
             .frame(maxWidth: .infinity, alignment: .leading)
-            Text(cost.map { formatCurrency(amount: $0, currency: "USD") } ?? "—")
-                .font(SL.mono(11.5))
-                .foregroundStyle(cost == nil ? SL.faint : SL.text)
-                .frame(width: 54, alignment: .trailing)
+            if showCost {
+                Text(cost.map { formatCurrency(amount: $0, currency: "USD") } ?? "—")
+                    .font(SL.mono(11.5))
+                    .foregroundStyle(cost == nil ? SL.faint : SL.text)
+                    .frame(width: 54, alignment: .trailing)
+            }
         }
         .padding(.horizontal, SL.Pad.card)
-        .padding(.vertical, 11)
+        .padding(.vertical, 12)
     }
 
     // MARK: - Method
 
     private func methodSection(_ recipe: Recipe) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             SLKicker("Method")
-            ZStack(alignment: .topLeading) {
-                // timeline spine
-                SL.line2.frame(width: 2).padding(.leading, 13).padding(.vertical, 14)
-                VStack(alignment: .leading, spacing: 18) {
-                    ForEach(Array(recipe.steps.enumerated()), id: \.offset) { index, step in
-                        methodStep(index: index, step: step)
-                    }
+            VStack(alignment: .leading, spacing: 16) {
+                ForEach(Array(recipe.steps.enumerated()), id: \.offset) { index, step in
+                    methodStep(index: index, step: step)
                 }
             }
-            .padding(.leading, 30)
         }
     }
 
     private func methodStep(index: Int, step: Step) -> some View {
-        HStack(alignment: .top, spacing: 0) {
+        HStack(alignment: .top, spacing: 12) {
             Text("\(index + 1)")
-                .font(SL.mono(12, .bold))
+                .font(SL.mono(12.5, .bold))
                 .foregroundStyle(SL.onAccent)
-                .frame(width: 28, height: 28)
+                .frame(width: 26, height: 26)
                 .background(SL.accent, in: Circle())
-                .offset(x: -30)
-                .frame(width: 0, alignment: .leading)
-            VStack(alignment: .leading, spacing: 6) {
-                Text(step.instruction).font(SL.body(13)).lineSpacing(13 * 0.45).foregroundStyle(SL.text)
+            VStack(alignment: .leading, spacing: 7) {
+                Text(step.instruction)
+                    .font(SL.body(14))
+                    .lineSpacing(14 * 0.4)
+                    .foregroundStyle(SL.text)
+                    .fixedSize(horizontal: false, vertical: true)
                 if let timer = step.timerSeconds?.intValue, timer > 0 {
                     Text("⏱ \(timerLabel(timer))")
                         .font(SL.mono(11)).foregroundStyle(SL.accent)
@@ -348,6 +356,8 @@ struct RecipeDetailView: View {
                         .overlay(Capsule().strokeBorder(SL.accent.opacity(0.35), lineWidth: 1))
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 1)
         }
     }
 
