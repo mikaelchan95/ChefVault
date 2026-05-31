@@ -1,10 +1,10 @@
 package com.chefvault.android.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Folder
@@ -33,7 +32,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chefvault.android.ui.auth.AuthFlow
 import com.chefvault.android.ui.collection.CollectionsTab
@@ -43,7 +41,6 @@ import com.chefvault.android.ui.recipe.RecipeImportScreen
 import com.chefvault.android.ui.recipe.RecipesTab
 import com.chefvault.android.ui.settings.SettingsTab
 import com.chefvault.android.ui.theme.LocalSl
-import com.chefvault.android.ui.theme.SlDivider
 import com.chefvault.android.ui.theme.slBody
 import com.chefvault.shared.data.ChefVaultSDK
 import com.chefvault.shared.data.repository.AuthState
@@ -104,31 +101,37 @@ private fun MainScaffold(
     }
 }
 
+/** Floating capsule tab bar — a detached pill hovering above the system nav. The active tab is a
+ *  filled accent chip that expands to show its label; the rest are icon-only. Mirrors iOS SLTabBar. */
 @Composable
 private fun SlBottomBar(active: Tab, onSelect: (Tab) -> Unit, modifier: Modifier = Modifier) {
     val sl = LocalSl.current
-    Column(modifier.fillMaxWidth().background(sl.surface)) {
-        SlDivider()
+    Box(modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 18.dp, vertical = 8.dp)) {
         Row(
-            Modifier.fillMaxWidth().navigationBarsPadding().padding(top = 9.dp, bottom = 6.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
+            Modifier
+                .fillMaxWidth()
+                .clip(CircleShape)
+                .background(sl.elevated)
+                .border(1.dp, sl.line2, CircleShape)
+                .padding(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Tab.entries.forEach { t ->
                 val on = t == active
-                Column(
-                    Modifier.weight(1f).clickable { onSelect(t) },
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                Row(
+                    (if (on) Modifier else Modifier.weight(1f))
+                        .clip(CircleShape)
+                        .background(if (on) sl.accent else Color.Transparent)
+                        .clickable { onSelect(t) }
+                        .padding(horizontal = if (on) 16.dp else 0.dp, vertical = 11.dp),
+                    horizontalArrangement = if (on) Arrangement.spacedBy(7.dp) else Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Box(
-                        Modifier.size(width = 38.dp, height = 26.dp).clip(RoundedCornerShape(9.dp))
-                            .background(if (on) sl.accentSoft else Color.Transparent),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(t.icon, contentDescription = t.label, tint = if (on) sl.accent else sl.faint, modifier = Modifier.size(18.dp))
+                    Icon(t.icon, contentDescription = t.label, tint = if (on) sl.onAccent else sl.muted, modifier = Modifier.size(20.dp))
+                    if (on) {
+                        Text(t.label, style = slBody(13.5, FontWeight.SemiBold), color = sl.onAccent, maxLines = 1)
                     }
-                    Text(t.label.uppercase(), style = slBody(8.5, FontWeight.Bold).copy(letterSpacing = 0.7.sp), color = if (on) sl.accent else sl.faint)
-                    Box(Modifier.size(5.dp).clip(CircleShape).background(if (on) sl.accent else Color.Transparent))
                 }
             }
         }

@@ -38,32 +38,47 @@ struct SLTabScaffold: View {
     private func quiet(_ op: () async throws -> Void) async { try? await op() }
 }
 
+/// Floating capsule tab bar — a detached pill hovering above the home indicator. The active
+/// tab is a filled accent chip that expands to show its label; the rest are icon-only.
 struct SLTabBar: View {
     @Binding var selection: SLTab
     var body: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 6) {
             ForEach(SLTab.allCases, id: \.self) { t in
-                let on = t == selection
-                VStack(spacing: 4) {
-                    Image(systemName: t.icon)
-                        .font(.system(size: 17, weight: .semibold))
-                        .frame(width: 38, height: 26)
-                        .foregroundStyle(on ? SL.accent : SL.faint)
-                        .background(on ? SL.accentSoft : .clear, in: RoundedRectangle(cornerRadius: 9))
-                    Text(t.label.uppercased())
-                        .font(SL.body(8.5, .bold)).tracking(0.7)
-                        .foregroundStyle(on ? SL.accent : SL.faint)
-                    Circle().fill(on ? SL.accent : .clear).frame(width: 5, height: 5)
-                }
-                .frame(maxWidth: .infinity)
-                .contentShape(Rectangle())
-                .onTapGesture { selection = t }
+                tab(t)
             }
         }
-        .padding(.top, 9)
-        .padding(.bottom, 6)
-        .background(.ultraThinMaterial)
-        .overlay(SL.line.frame(height: 1), alignment: .top)
+        .padding(6)
+        .background(.ultraThinMaterial, in: Capsule(style: .continuous))
+        .background(Capsule(style: .continuous).fill(SL.elevated.opacity(0.6)))
+        .overlay(Capsule(style: .continuous).strokeBorder(SL.line2, lineWidth: 1))
+        .shadow(color: .black.opacity(0.28), radius: 16, y: 7)
+        .padding(.horizontal, SL.Pad.screen)
+        .padding(.bottom, 4)
+    }
+
+    @ViewBuilder
+    private func tab(_ t: SLTab) -> some View {
+        let on = t == selection
+        HStack(spacing: 7) {
+            Image(systemName: t.icon)
+                .font(.system(size: 17, weight: .semibold))
+            if on {
+                Text(t.label)
+                    .font(SL.body(13.5, .semibold))
+                    .fixedSize()
+                    .transition(.opacity.combined(with: .scale(scale: 0.7, anchor: .leading)))
+            }
+        }
+        .foregroundStyle(on ? SL.onAccent : SL.muted)
+        .padding(.horizontal, on ? 18 : 0)
+        .frame(maxWidth: on ? nil : .infinity)
+        .frame(height: 44)
+        .background(Capsule(style: .continuous).fill(on ? SL.accent : .clear))
+        .contentShape(Capsule())
+        .onTapGesture {
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) { selection = t }
+        }
     }
 }
 
