@@ -110,7 +110,7 @@ struct PlatingPhotosEditor: View {
                                 .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4]))
                                 .foregroundStyle(.secondary)
                                 .frame(width: 96, height: 96)
-                                .overlay(Image(systemName: "camera").foregroundStyle(CV.primary))
+                                .overlay(Image(systemName: "camera").foregroundStyle(SL.accent))
                         }
                     }
                 }

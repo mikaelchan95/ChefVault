@@ -70,7 +70,7 @@ struct CollectionStatusBadge: View {
 
     private var isActive: Bool { status == .active }
     private var label: String { isActive ? "Active" : "Draft" }
-    private var tint: Color { isActive ? CV.primary : .secondary }
+    private var tint: Color { isActive ? SL.accent : .secondary }
 
     var body: some View {
         Text(label)
@@ -82,12 +82,12 @@ struct CollectionStatusBadge: View {
     }
 }
 
-/// Tone gradients keyed by a stable hash of the collection — one of four ember/sage/violet/steel pairs.
+/// Tone gradients keyed by a stable hash of the collection — four monochrome graphite pairs.
 private let collectionTones: [[Color]] = [
-    [Color(hex: 0x2A1D14), Color(hex: 0x3A2415)],
-    [Color(hex: 0x15231C), Color(hex: 0x1C3327)],
-    [Color(hex: 0x241A25), Color(hex: 0x2F2036)],
-    [Color(hex: 0x1A2230), Color(hex: 0x22304A)],
+    [Color(hex: 0x2C2C2E), Color(hex: 0x3A3A3D)],
+    [Color(hex: 0x202022), Color(hex: 0x2D2D30)],
+    [Color(hex: 0x37373A), Color(hex: 0x46464A)],
+    [Color(hex: 0x181819), Color(hex: 0x262629)],
 ]
 
 /// Grid card: gradient hero with a zero-padded mono count, then name + recipe count.

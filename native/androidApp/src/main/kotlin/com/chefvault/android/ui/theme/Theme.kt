@@ -38,7 +38,7 @@ val SpaceMono = FontFamily(
     Font(R.font.space_mono_bold, FontWeight.Bold),
 )
 
-// MARK: - Color tokens (dark-first; ember accent constant across themes)
+// MARK: - Color tokens (dark-first; monochrome accent — near-white on dark / near-black on light)
 
 data class SlColors(
     val bg: Color,
@@ -48,9 +48,9 @@ data class SlColors(
     val text: Color,
     val muted: Color,
     val faint: Color,
-    val accent: Color = Color(0xFFE2611C),
-    val onAccent: Color = Color(0xFF180D04),
-    val accentSoft: Color = Color(0x26E2611C),
+    val accent: Color = Color(0xFFF2F2EF),
+    val onAccent: Color = Color(0xFF111112),
+    val accentSoft: Color = Color(0x26F2F2EF),
     val good: Color = Color(0xFF3F9B6B),
     val danger: Color = Color(0xFFE0735F),
     val line: Color,
@@ -58,14 +58,16 @@ data class SlColors(
 )
 
 private val SlDark = SlColors(
-    bg = Color(0xFF0D0D0F), surface = Color(0xFF161619), surface2 = Color(0xFF1D1D21),
-    elevated = Color(0xFF26262B), text = Color(0xFFF4F1EA), muted = Color(0xFF9A978E),
-    faint = Color(0xFF66635C), line = Color(0x14FFFFFF), line2 = Color(0x24FFFFFF),
+    bg = Color(0xFF0C0C0D), surface = Color(0xFF151517), surface2 = Color(0xFF1D1D1F),
+    elevated = Color(0xFF272729), text = Color(0xFFF4F4F2), muted = Color(0xFF9A9A97),
+    faint = Color(0xFF646462), line = Color(0x14FFFFFF), line2 = Color(0x26FFFFFF),
 )
 private val SlLight = SlColors(
-    bg = Color(0xFFF3EFE7), surface = Color(0xFFFBF9F4), surface2 = Color(0xFFF3EFE6),
-    elevated = Color(0xFFFFFFFF), text = Color(0xFF1C1813), muted = Color(0xFF726A5E),
-    faint = Color(0xFFA89F90), line = Color(0x1A1C1813), line2 = Color(0x2B1C1813),
+    bg = Color(0xFFEEEEEC), surface = Color(0xFFF9F9F7), surface2 = Color(0xFFEFEFEC),
+    elevated = Color(0xFFFFFFFF), text = Color(0xFF1A1A18), muted = Color(0xFF6C6C68),
+    faint = Color(0xFFA4A4A0), line = Color(0x1A141412), line2 = Color(0x2B141412),
+    accent = Color(0xFF1A1A18), onAccent = Color(0xFFF7F7F5), accentSoft = Color(0x261A1A18),
+    good = Color(0xFF2F7D54), danger = Color(0xFFC4543F),
 )
 
 val LocalSl = staticCompositionLocalOf { SlDark }
@@ -98,6 +100,3 @@ fun ChefVaultTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composa
         MaterialTheme(colorScheme = scheme, typography = typography, content = content)
     }
 }
-
-// Brand orange kept for any legacy reference; prefer LocalSl.current.accent.
-val BrandOrange = Color(0xFFE2611C)

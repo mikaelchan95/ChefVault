@@ -1,25 +1,29 @@
 import SwiftUI
 
-/// "Service Line" design system — dark-first, ember accent, Bricolage Grotesque /
+/// "Service Line" design system — dark-first, monochrome accent, Bricolage Grotesque /
 /// Hanken Grotesk / Space Mono. Ported from the hi-fi `hifi-kit.jsx`. Colors resolve
-/// per color scheme (dark is the primary, light is a warm-cream variant); the ember
-/// accent is constant across both.
+/// per color scheme (dark is the primary, light is a neutral-gray variant); the accent
+/// is near-white on dark / near-black on light. Red (danger) and green (good) are the
+/// only semantic chroma kept.
 enum SL {
     // MARK: Color tokens
-    static let bg        = dyn(light: 0xF3EFE7, dark: 0x0D0D0F)
-    static let surface   = dyn(light: 0xFBF9F4, dark: 0x161619)
-    static let surface2  = dyn(light: 0xF3EFE6, dark: 0x1D1D21)
-    static let elevated  = dyn(light: 0xFFFFFF, dark: 0x26262B)
-    static let text      = dyn(light: 0x1C1813, dark: 0xF4F1EA)
-    static let muted     = dyn(light: 0x726A5E, dark: 0x9A978E)
-    static let faint     = dyn(light: 0xA89F90, dark: 0x66635C)
-    static let accent    = Color(hex: 0xE2611C)
-    static let onAccent  = Color(hex: 0x180D04)
-    static let good      = Color(hex: 0x3F9B6B)
-    static let danger    = Color(hex: 0xE0735F)
+    static let bg        = dyn(light: 0xEEEEEC, dark: 0x0C0C0D)
+    static let surface   = dyn(light: 0xF9F9F7, dark: 0x151517)
+    static let surface2  = dyn(light: 0xEFEFEC, dark: 0x1D1D1F)
+    static let elevated  = dyn(light: 0xFFFFFF, dark: 0x272729)
+    static let text      = dyn(light: 0x1A1A18, dark: 0xF4F4F2)
+    static let muted     = dyn(light: 0x6C6C68, dark: 0x9A9A97)
+    static let faint     = dyn(light: 0xA4A4A0, dark: 0x646462)
+    // Monochrome accent: near-white on dark, near-black on light (auto-follows theme).
+    static let accent    = dyn(light: 0x1A1A18, dark: 0xF2F2EF)
+    static let accentHi  = dyn(light: 0x33332F, dark: 0xF6F6F4)   // gradient-top highlight
+    static let onAccent  = dyn(light: 0xF7F7F5, dark: 0x111112)
+    // Semantic colors — the only chroma kept: green = success/purchase, red = destructive.
+    static let good      = dyn(light: 0x2F7D54, dark: 0x3F9B6B)
+    static let danger    = dyn(light: 0xC4543F, dark: 0xE0735F)
     /// Hairline borders — white-tint over dark, ink-tint over light.
-    static let line  = dynA(light: (0x1C1813, 0.10), dark: (0xFFFFFF, 0.08))
-    static let line2 = dynA(light: (0x1C1813, 0.17), dark: (0xFFFFFF, 0.14))
+    static let line  = dynA(light: (0x141412, 0.10), dark: (0xFFFFFF, 0.08))
+    static let line2 = dynA(light: (0x141412, 0.17), dark: (0xFFFFFF, 0.15))
 
     static let accentSoft = accent.opacity(0.15)
 

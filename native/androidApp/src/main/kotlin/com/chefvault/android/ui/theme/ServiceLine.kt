@@ -221,10 +221,10 @@ fun SlTextField(
 // MARK: - Color-hashed tile
 
 private val SlTileTones = listOf(
-    listOf(Color(0xFF2A1D14), Color(0xFF3A2415)),
-    listOf(Color(0xFF15231C), Color(0xFF1C3327)),
-    listOf(Color(0xFF241A25), Color(0xFF2F2036)),
-    listOf(Color(0xFF1A2230), Color(0xFF22304A)),
+    listOf(Color(0xFF2C2C2E), Color(0xFF3A3A3D)),
+    listOf(Color(0xFF202022), Color(0xFF2D2D30)),
+    listOf(Color(0xFF37373A), Color(0xFF46464A)),
+    listOf(Color(0xFF181819), Color(0xFF262629)),
 )
 
 @Composable

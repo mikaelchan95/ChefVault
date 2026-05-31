@@ -17,12 +17,12 @@ import com.chefvault.android.ui.theme.LocalSl
 import com.chefvault.android.ui.theme.slMono
 import com.chefvault.shared.model.CollectionStatus
 
-/** Four ember/sage/violet/steel tone pairs — mirrors iOS collection heroes and SlTile. */
+/** Four monochrome graphite tone pairs — mirrors iOS collection heroes and SlTile. */
 val CollectionTones: List<List<Color>> = listOf(
-    listOf(Color(0xFF2A1D14), Color(0xFF3A2415)),
-    listOf(Color(0xFF15231C), Color(0xFF1C3327)),
-    listOf(Color(0xFF241A25), Color(0xFF2F2036)),
-    listOf(Color(0xFF1A2230), Color(0xFF22304A)),
+    listOf(Color(0xFF2C2C2E), Color(0xFF3A3A3D)),
+    listOf(Color(0xFF202022), Color(0xFF2D2D30)),
+    listOf(Color(0xFF37373A), Color(0xFF46464A)),
+    listOf(Color(0xFF181819), Color(0xFF262629)),
 )
 
 /** Stable tone index hashed from the collection id (matches iOS). */
@@ -32,16 +32,22 @@ fun collectionToneBrush(id: String): Brush = Brush.linearGradient(CollectionTone
 
 /** Preset cover colors offered in create/edit (mirror of iOS collectionPresetHexes). */
 val CollectionPresetHexes = listOf(
-    "#E2611C", "#E0735F", "#3F9B6B", "#3B82F6",
-    "#A855F7", "#EC4899", "#F59E0B", "#14B8A6",
+    "#3A3A3D", "#2D2D30", "#46464A", "#262629",
+    "#52525A", "#1F1F22", "#5E5E64", "#34343A",
 )
 
-/** Parse a hex color (e.g. "#E2611C"); fall back to the ember accent on any failure. */
+/** Parse a hex color and desaturate it to grayscale (monochrome design); fall back to the accent on failure. */
 @Composable
 fun collectionColor(hex: String?): Color {
     val accent = LocalSl.current.accent
     return try {
-        Color(android.graphics.Color.parseColor(hex))
+        val c = android.graphics.Color.parseColor(hex)
+        // Monochrome design: desaturate any stored/preset color to its luminance gray.
+        val r = ((c shr 16) and 0xFF) / 255f
+        val g = ((c shr 8) and 0xFF) / 255f
+        val b = (c and 0xFF) / 255f
+        val gray = 0.299f * r + 0.587f * g + 0.114f * b
+        Color(gray, gray, gray)
     } catch (e: Exception) {
         accent
     }

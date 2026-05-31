@@ -41,14 +41,17 @@ func colorFromHex(_ hex: String?) -> Color? {
     let r = Double((int >> 16) & 0xFF) / 255.0
     let g = Double((int >> 8) & 0xFF) / 255.0
     let b = Double(int & 0xFF) / 255.0
-    return Color(red: r, green: g, blue: b)
+    // Monochrome design: desaturate any stored/preset color to its luminance gray so
+    // collection covers stay grayscale (existing chromatic saves render as grays).
+    let gray = 0.299 * r + 0.587 * g + 0.114 * b
+    return Color(red: gray, green: gray, blue: gray)
 }
 
 /// Stable fallback color derived from a collection name, so cards without an
 /// explicit color still look distinct and consistent across launches.
 func derivedColor(for name: String) -> Color {
     let palette: [Color] = collectionPresetHexes.compactMap { colorFromHex($0) }
-    guard !palette.isEmpty else { return CV.primary }
+    guard !palette.isEmpty else { return SL.accent }
     var hash = 5381
     for scalar in name.unicodeScalars { hash = (hash &* 33) &+ Int(scalar.value) }
     return palette[abs(hash) % palette.count]
@@ -61,6 +64,6 @@ func heroColor(for collection: ChefVaultShared.Collection) -> Color {
 
 /// Preset swatch palette offered in the create form (and reused for fallbacks).
 let collectionPresetHexes: [String] = [
-    "#FF7A00", "#EF4444", "#22C55E", "#3B82F6",
-    "#A855F7", "#EC4899", "#F59E0B", "#14B8A6",
+    "#3A3A3D", "#2D2D30", "#46464A", "#262629",
+    "#52525A", "#1F1F22", "#5E5E64", "#34343A",
 ]

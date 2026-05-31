@@ -1,11 +1,8 @@
 import SwiftUI
 
-/// Brand design tokens, ported from `src/constants/theme.ts`. Orange accent is constant
-/// across light/dark; neutrals come from the system semantic colors (warm-light / dark).
+/// Layout tokens (spacing + radii) used by a few remaining views (e.g. PlatingPhotos).
+/// All color now lives in the monochrome `SL` design system (`ServiceLine.swift`).
 enum CV {
-    static let primary = Color(red: 1.0, green: 122.0 / 255.0, blue: 0.0) // #FF7A00
-    static let primaryTint = Color(red: 1.0, green: 122.0 / 255.0, blue: 0.0).opacity(0.15)
-
     enum Spacing {
         static let xs: CGFloat = 4
         static let sm: CGFloat = 8

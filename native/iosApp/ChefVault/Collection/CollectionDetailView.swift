@@ -51,12 +51,12 @@ final class CollectionDetailViewModel {
     }
 }
 
-/// Tone gradients keyed by a stable hash of the collection — one of four ember/sage/violet/steel pairs.
+/// Tone gradients keyed by a stable hash of the collection — four monochrome graphite pairs.
 private let collectionDetailTones: [[Color]] = [
-    [Color(hex: 0x2A1D14), Color(hex: 0x3A2415)],
-    [Color(hex: 0x15231C), Color(hex: 0x1C3327)],
-    [Color(hex: 0x241A25), Color(hex: 0x2F2036)],
-    [Color(hex: 0x1A2230), Color(hex: 0x22304A)],
+    [Color(hex: 0x2C2C2E), Color(hex: 0x3A3A3D)],
+    [Color(hex: 0x202022), Color(hex: 0x2D2D30)],
+    [Color(hex: 0x37373A), Color(hex: 0x46464A)],
+    [Color(hex: 0x181819), Color(hex: 0x262629)],
 ]
 
 /// Service Line status pill — Active uses the ember accent, Draft a neutral surface.

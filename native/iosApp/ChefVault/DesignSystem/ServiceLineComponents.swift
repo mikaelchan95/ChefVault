@@ -62,7 +62,7 @@ struct SLButton: View {
     @ViewBuilder private var bg: some View {
         switch variant {
         case .primary:
-            LinearGradient(colors: [Color(hex: 0xF0843A), SL.accent], startPoint: .top, endPoint: .bottom)
+            LinearGradient(colors: [SL.accentHi, SL.accent], startPoint: .top, endPoint: .bottom)
         case .secondary: SL.surface2
         case .ghost: Color.clear
         case .danger: SL.danger.opacity(0.14)
@@ -177,10 +177,10 @@ struct SLTile: View {
     var size: CGFloat = 56
     var corner: CGFloat = 14
     private static let tones: [[Color]] = [
-        [Color(hex: 0x2A1D14), Color(hex: 0x3A2415)],
-        [Color(hex: 0x15231C), Color(hex: 0x1C3327)],
-        [Color(hex: 0x241A25), Color(hex: 0x2F2036)],
-        [Color(hex: 0x1A2230), Color(hex: 0x22304A)],
+        [Color(hex: 0x2C2C2E), Color(hex: 0x3A3A3D)],
+        [Color(hex: 0x202022), Color(hex: 0x2D2D30)],
+        [Color(hex: 0x37373A), Color(hex: 0x46464A)],
+        [Color(hex: 0x181819), Color(hex: 0x262629)],
     ]
     var body: some View {
         LinearGradient(colors: Self.tones[tone % 4], startPoint: .topLeading, endPoint: .bottomTrailing)
