@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -40,12 +39,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import com.chefvault.android.ui.common.formatQuantity
 import com.chefvault.android.ui.theme.LocalSl
 import com.chefvault.android.ui.theme.SlBackground
@@ -96,24 +97,25 @@ fun RecipeDetailScreen(sdk: ChefVaultSDK, recipeId: String, onBack: () -> Unit, 
                 return@Column
             }
 
-            ControlBar(recipe, servings, onServings = { servings = it }, system, onSystem = { system = it })
-
             val ratio = if (recipe.servings > 0) servings.toDouble() / recipe.servings else 1.0
             val scaled = scaleRecipeIngredients(recipe.ingredients, recipe.servings, servings, system)
             val summary = remember(recipe.ingredients, recipe.servings) {
                 calculateRecipeCost(recipe.ingredients, recipe.servings)
             }
+            val showCost = summary.costedCount > 0
 
             Column(
                 // extra bottom padding clears the always-present SL tab bar overlay
                 Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(18.dp).padding(bottom = 96.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
-                MetaGrid(recipe)
+                HeroImage(recipe)
+                TitleScaling(recipe, servings, onServings = { servings = it }, system, onSystem = { system = it })
+                MetaStrip(recipe, servings)
                 SourceLink(recipe)
-                if (summary.totalCosted > 0) CostCard(summary)
-                IngredientsSection(scaled, recipe, ratio)
+                IngredientsSection(scaled, recipe, ratio, showCost)
                 if (recipe.steps.isNotEmpty()) MethodSection(recipe.steps)
+                if (showCost) CostCard(summary)
             }
         }
     }
@@ -161,7 +163,23 @@ private fun BackRow(hasRecipe: Boolean, onBack: () -> Unit, onShare: () -> Unit,
 }
 
 @Composable
-private fun ControlBar(
+private fun HeroImage(recipe: Recipe) {
+    val sl = LocalSl.current
+    val img = recipe.imageUrl?.takeIf { it.isNotBlank() } ?: return
+    AsyncImage(
+        model = img,
+        contentDescription = recipe.title,
+        contentScale = ContentScale.Crop,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(208.dp)
+            .clip(RoundedCornerShape(22.dp))
+            .border(1.dp, sl.line, RoundedCornerShape(22.dp)),
+    )
+}
+
+@Composable
+private fun TitleScaling(
     recipe: Recipe,
     servings: Int,
     onServings: (Int) -> Unit,
@@ -169,11 +187,8 @@ private fun ControlBar(
     onSystem: (MeasurementSystem) -> Unit,
 ) {
     val sl = LocalSl.current
-    Column(
-        Modifier.fillMaxWidth().background(sl.surface).padding(horizontal = 18.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(recipe.title, style = slDisplay(23.0, FontWeight.ExtraBold), color = sl.text)
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Text(recipe.title, style = slDisplay(25.0, FontWeight.ExtraBold), color = sl.text)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Stepper(value = servings, onChange = { onServings(it.coerceIn(1, 100)) })
             Text("SERVINGS", style = slMono(10.5).copy(letterSpacing = 1.sp), color = sl.faint)
@@ -181,7 +196,6 @@ private fun ControlBar(
             UnitSegmented(system, onSystem, modifier = Modifier.width(150.dp))
         }
     }
-    Box(Modifier.fillMaxWidth().height(1.dp).background(sl.line))
 }
 
 @Composable
@@ -226,21 +240,22 @@ private fun SegmentButton(label: String, active: Boolean, modifier: Modifier = M
 }
 
 @Composable
-private fun MetaGrid(recipe: Recipe) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        MetaCard("Cuisine", recipe.cuisine?.takeIf { it.isNotBlank() } ?: "—", Modifier.weight(1f))
-        MetaCard("Prep", recipe.prepTime?.let { "${it}m" } ?: "—", Modifier.weight(1f))
-        MetaCard("Cook", recipe.cookTime?.let { "${it}m" } ?: "—", Modifier.weight(1f))
-    }
-}
-
-@Composable
-private fun MetaCard(kicker: String, value: String, modifier: Modifier = Modifier) {
+private fun MetaStrip(recipe: Recipe, servings: Int) {
     val sl = LocalSl.current
-    SlCard(modifier = modifier, soft = true) {
-        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            SlKicker(kicker)
-            Text(value, style = slDisplay(16.0, FontWeight.Bold), color = sl.text, maxLines = 1)
+    val total = (recipe.prepTime ?: 0) + (recipe.cookTime ?: 0)
+    val chips = buildList {
+        recipe.cuisine?.takeIf { it.isNotBlank() }?.let { add(it) }
+        if (total > 0) add("$total min")
+        add("$servings ${if (servings == 1) "serving" else "servings"}")
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        chips.forEach { c ->
+            Box(
+                Modifier.clip(CircleShape).background(sl.surface).border(1.dp, sl.line, CircleShape)
+                    .padding(horizontal = 12.dp, vertical = 7.dp),
+            ) {
+                Text(c, style = slBody(12.5, FontWeight.Medium), color = sl.muted)
+            }
         }
     }
 }
@@ -279,34 +294,34 @@ private fun CostCard(summary: RecipeCostSummary) {
 }
 
 @Composable
-private fun IngredientsSection(scaled: List<ScaledIngredient>, recipe: Recipe, ratio: Double) {
+private fun IngredientsSection(scaled: List<ScaledIngredient>, recipe: Recipe, ratio: Double, showCost: Boolean) {
     val sl = LocalSl.current
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         SlKicker("Ingredients")
         Column(
             Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(sl.surface).border(1.dp, sl.line, RoundedCornerShape(12.dp)),
         ) {
-            Row(Modifier.fillMaxWidth().background(sl.surface2).padding(horizontal = 14.dp, vertical = 9.dp)) {
-                IngredientHeaderCell("QTY", Modifier.width(36.dp))
-                IngredientHeaderCell("UNIT", Modifier.width(40.dp))
-                IngredientHeaderCell("INGREDIENT", Modifier.weight(1f))
-                IngredientHeaderCell("COST", Modifier.width(54.dp), TextAlign.End)
-            }
             scaled.forEachIndexed { index, item ->
-                Box(Modifier.fillMaxWidth().height(1.dp).background(sl.line))
-                val cost = calculateScaledCost(recipe.ingredients[index].costPerUnit, recipe.ingredients[index].quantity * ratio)
-                Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 11.dp), verticalAlignment = Alignment.Top) {
-                    Text(formatQuantity(item.quantity), style = slMono(12.0, FontWeight.Bold), color = sl.accent, modifier = Modifier.width(36.dp))
-                    Text(item.unit, style = slMono(11.0), color = sl.muted, modifier = Modifier.width(40.dp))
+                if (index > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(sl.line))
+                Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.Top) {
+                    Row(Modifier.width(96.dp)) {
+                        Text(formatQuantity(item.quantity), style = slMono(12.5, FontWeight.Bold), color = sl.accent, maxLines = 1)
+                        if (item.unit.isNotEmpty()) {
+                            Text(" ${item.unit}", style = slMono(12.5, FontWeight.Bold), color = sl.muted, maxLines = 1)
+                        }
+                    }
                     val name = if (!item.notes.isNullOrEmpty()) "${item.name} · ${item.notes}" else item.name
-                    Text(name, style = slBody(13.0), color = sl.text, modifier = Modifier.weight(1f))
-                    Text(
-                        if (cost != null) formatCurrency(cost, "USD") else "—",
-                        style = slMono(11.5),
-                        color = if (cost == null) sl.faint else sl.text,
-                        modifier = Modifier.width(54.dp),
-                        textAlign = TextAlign.End,
-                    )
+                    Text(name, style = slBody(13.5), color = sl.text, modifier = Modifier.weight(1f))
+                    if (showCost) {
+                        val cost = calculateScaledCost(recipe.ingredients[index].costPerUnit, recipe.ingredients[index].quantity * ratio)
+                        Text(
+                            if (cost != null) formatCurrency(cost, "USD") else "—",
+                            style = slMono(11.5),
+                            color = if (cost == null) sl.faint else sl.text,
+                            modifier = Modifier.width(54.dp),
+                            textAlign = TextAlign.End,
+                        )
+                    }
                 }
             }
         }
@@ -314,33 +329,24 @@ private fun IngredientsSection(scaled: List<ScaledIngredient>, recipe: Recipe, r
 }
 
 @Composable
-private fun IngredientHeaderCell(label: String, modifier: Modifier, align: TextAlign = TextAlign.Start) {
-    Text(label, style = slMono(9.0, FontWeight.Bold).copy(letterSpacing = 0.8.sp), color = LocalSl.current.faint, modifier = modifier, textAlign = align)
-}
-
-@Composable
 private fun MethodSection(steps: List<Step>) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SlKicker("Method")
-        Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
-            steps.forEachIndexed { index, step -> StepRow(index + 1, step, last = index == steps.lastIndex) }
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            steps.forEachIndexed { index, step -> StepRow(index + 1, step) }
         }
     }
 }
 
 @Composable
-private fun StepRow(number: Int, step: Step, last: Boolean) {
+private fun StepRow(number: Int, step: Step) {
     val sl = LocalSl.current
-    Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        // ember number circle, with a spine continuing down to the next step
-        Column(Modifier.width(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(Modifier.size(28.dp).clip(CircleShape).background(sl.accent), contentAlignment = Alignment.Center) {
-                Text("$number", style = slMono(12.0, FontWeight.Bold), color = sl.onAccent)
-            }
-            if (!last) Box(Modifier.width(2.dp).weight(1f).padding(top = 4.dp).background(sl.line2))
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+        Box(Modifier.size(26.dp).clip(CircleShape).background(sl.accent), contentAlignment = Alignment.Center) {
+            Text("$number", style = slMono(12.5, FontWeight.Bold), color = sl.onAccent)
         }
-        Column(Modifier.weight(1f).padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(step.instruction, style = slBody(13.0).copy(lineHeight = 19.sp), color = sl.text)
+        Column(Modifier.weight(1f).padding(top = 1.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+            Text(step.instruction, style = slBody(14.0).copy(lineHeight = 20.sp), color = sl.text)
             val timer = step.timerSeconds ?: 0
             if (timer > 0) {
                 Box(Modifier.clip(CircleShape).border(1.dp, sl.accent.copy(alpha = 0.35f), CircleShape).padding(horizontal = 8.dp, vertical = 4.dp)) {
