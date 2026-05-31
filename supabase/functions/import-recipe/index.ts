@@ -3,22 +3,21 @@
 // Runs server-side so all keys stay in Supabase secrets, never in the app.
 //
 // Secrets (set with `supabase secrets set …`):
-//   GEMINI_API_KEY   — required. Powers video "watching" + text structuring (Gemini).
-//   RESOLVER_API_KEY — Apify token, to resolve TikTok/IG share links → media + caption.
-//                      The actor is auto-picked per platform (see RESOLVER_ACTORS);
-//                      override with RESOLVER_ACTOR (the "user~actor" form) if desired.
+//   GEMINI_API_KEY    — required. Powers video "watching" + text structuring (Gemini).
+//   RESOLVER_API_KEY  — Apify token, to resolve TikTok/IG share links → media + caption.
+//                       Actor auto-picked per platform (RESOLVER_ACTORS); override w/ RESOLVER_ACTOR.
+//   FIRECRAWL_API_KEY — optional but recommended. Scrapes recipe blogs (handles JS + bot walls
+//                       that block a plain fetch). Falls back to direct fetch if absent.
 //
-// Output: snake_case JSON matching the app's NewRecipe wire shape (the supabase-kt client
-// decodes it with the SnakeCase naming strategy). Always returns `source_url` + `warnings`.
-//
-// verify_jwt = true (see config.toml) — only authenticated users can call it.
+// Output: snake_case JSON matching the app's NewRecipe wire shape. Always returns
+// `source_url` + `warnings`. verify_jwt = true (see config.toml).
 
 import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 const GEMINI_MODEL = "gemini-2.0-flash";
 const MAX_INLINE_BYTES = 18 * 1024 * 1024; // ~18MB inline cap (short clips); larger → File API (TODO)
 
-// Default Apify actors per platform. Override either with the RESOLVER_ACTOR env (~ form).
+// Default Apify actors per platform. Override with the RESOLVER_ACTOR env (~ form).
 const RESOLVER_ACTORS: Record<string, string> = {
   tiktok: "clockworks~tiktok-scraper",
   instagram: "apify~instagram-scraper",
@@ -30,7 +29,6 @@ const SYSTEM_PROMPT =
   "keep steps short and ordered. Do NOT invent ingredients or steps that aren't present. " +
   "If a value can't be determined, omit it and add a short note to `warnings`. Respond in English.";
 
-// Gemini responseSchema — property names are snake_case so the JSON matches the app wire shape.
 const RECIPE_SCHEMA = {
   type: "object",
   properties: {
@@ -100,13 +98,15 @@ Deno.serve(async (req) => {
     let recipe: Record<string, unknown> | null = null;
 
     if (kind === "article") {
-      const html = await fetchText(url);
+      const { html, text } = await scrapeArticle(url, warnings);
       const jsonld = extractRecipeJsonLd(html);
       if (jsonld) {
         recipe = mapJsonLdRecipe(jsonld); // structured data → no LLM needed
       } else {
+        const body = (text || readable(html)).slice(0, 24000);
+        if (!body) return json({ error: "Couldn't read this page.", warnings }, 422);
         recipe = await geminiExtract(geminiKey, [
-          { text: `Extract the recipe from this article:\n\n${readable(html).slice(0, 24000)}` },
+          { text: `Extract the recipe from this article:\n\n${body}` },
         ], warnings);
       }
     } else if (kind === "youtube") {
@@ -225,7 +225,31 @@ async function resolveVideo(
   return { videoUrl, caption };
 }
 
-// ---- Article helpers ----
+// ---- Article scrape (Firecrawl preferred → handles JS + bot walls; falls back to fetch) ----
+
+async function scrapeArticle(url: string, warnings: string[]): Promise<{ html: string; text: string }> {
+  const fcKey = Deno.env.get("FIRECRAWL_API_KEY");
+  if (fcKey) {
+    try {
+      const res = await fetch("https://api.firecrawl.dev/v1/scrape", {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${fcKey}` },
+        body: JSON.stringify({ url, formats: ["rawHtml", "markdown"], onlyMainContent: true }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const d = data?.data ?? {};
+        // rawHtml keeps the ld+json scripts (for JSON-LD); markdown is clean text for Gemini.
+        return { html: String(d.rawHtml ?? d.html ?? ""), text: String(d.markdown ?? "") };
+      }
+      warnings.push(`Scraper error ${res.status}; trying a direct fetch.`);
+    } catch {
+      warnings.push("Scraper failed; trying a direct fetch.");
+    }
+  }
+  const html = await fetchText(url); // fallback (may be blocked by big sites)
+  return { html, text: readable(html) };
+}
 
 async function fetchText(url: string): Promise<string> {
   const res = await fetch(url, {
