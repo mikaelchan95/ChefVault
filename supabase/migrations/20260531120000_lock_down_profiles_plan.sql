@@ -10,12 +10,7 @@
 -- re-granting exactly them keeps profile editing working:
 --   name, title, avatar_url, default_units, language, auto_backup
 
--- 1. Strip the blanket table-level UPDATE and re-grant only the user-editable columns.
-revoke update on public.profiles from anon, authenticated;
-grant update (name, title, avatar_url, default_units, language, auto_backup)
-  on public.profiles to authenticated;
-
--- 2. Defense-in-depth: reject any non-service-role attempt to change plan, even if
+-- Defense-in-depth: reject any non-service-role attempt to change plan, even if
 --    a future migration accidentally re-grants UPDATE on the column.
 create or replace function public.prevent_plan_self_change()
 returns trigger
@@ -30,7 +25,20 @@ begin
 end;
 $$;
 
-drop trigger if exists guard_profiles_plan on public.profiles;
-create trigger guard_profiles_plan
-  before update on public.profiles
-  for each row execute function public.prevent_plan_self_change();
+do $$
+begin
+  if to_regclass('public.profiles') is null then
+    raise notice 'Skipping profiles plan lockdown because public.profiles does not exist.';
+    return;
+  end if;
+
+  -- Strip the blanket table-level UPDATE and re-grant only the user-editable columns.
+  execute 'revoke update on public.profiles from anon, authenticated';
+  execute 'grant update (name, title, avatar_url, default_units, language, auto_backup)
+    on public.profiles to authenticated';
+
+  execute 'drop trigger if exists guard_profiles_plan on public.profiles';
+  execute 'create trigger guard_profiles_plan
+    before update on public.profiles
+    for each row execute function public.prevent_plan_self_change()';
+end $$;
