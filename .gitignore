@@ -26,3 +26,6 @@ Thumbs.db
 
 # Claude Design handoff bundle (re-downloadable)
 .design/
+
+# Local feature worktrees
+.worktrees/
