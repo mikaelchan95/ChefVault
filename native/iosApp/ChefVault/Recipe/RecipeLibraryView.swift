@@ -6,8 +6,7 @@ struct RecipeLibraryView: View {
     @State private var vm: RecipeListViewModel
     @State private var query = ""
     @State private var cuisine: String? = nil
-    @State private var showCreate = false
-    @State private var showImport = false
+    @State private var presentedCreateAction: MKPrimaryAction?
     @State private var showSort = false
     @State private var sortBy: RecipeSort = .updated
 
@@ -58,7 +57,7 @@ struct RecipeLibraryView: View {
             VStack(spacing: 0) {
                 SLAppBar(title: "Recipes", kicker: "Mise en place", count: "\(vm.recipes.count)") {
                     HStack(spacing: 7) {
-                        SLIconBtn(systemName: "link") { showImport = true }
+                        MKCreateActionMenu(selection: $presentedCreateAction)
                         SLIconBtn(systemName: "slider.horizontal.3", accent: sortBy != .updated) { showSort = true }
                     }
                 }
@@ -97,12 +96,19 @@ struct RecipeLibraryView: View {
                 RecipeDetailView(sdk: sdk, recipeId: id, baseServings: Int(vm.recipes.first { $0.id == id }?.servings ?? 1))
             }
             .toolbar(.hidden, for: .navigationBar)
-            .overlay { SLFab { showCreate = true } }
             .task { await vm.observe() }
             .task { await vm.refresh() }
             .refreshable { await vm.refresh() }
-            .sheet(isPresented: $showCreate) { CreateRecipeView(sdk: sdk) }
-            .sheet(isPresented: $showImport) { ImportRecipeView(sdk: sdk) }
+            .sheet(item: $presentedCreateAction) { action in
+                switch action {
+                case .newRecipe:
+                    CreateRecipeView(sdk: sdk)
+                case .talkRecipe:
+                    VoiceRecipeView(sdk: sdk)
+                case .importLink:
+                    ImportRecipeView(sdk: sdk)
+                }
+            }
             .sheet(isPresented: $showSort) { sortSheet }
         }
     }
