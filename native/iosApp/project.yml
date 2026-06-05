@@ -37,6 +37,8 @@ targets:
         SUPABASE_HOST: $(SUPABASE_HOST)
         SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)
         REVENUECAT_PUBLIC_SDK_KEY: $(REVENUECAT_PUBLIC_SDK_KEY)
+        NSSpeechRecognitionUsageDescription: ChefVault uses speech recognition to turn your spoken recipe into a draft you can review before saving.
+        NSMicrophoneUsageDescription: ChefVault uses the microphone when you choose Talk Recipe to record your recipe instructions.
         CFBundleURLTypes:
           - CFBundleURLSchemes: [chefvault]
         UIAppFonts:
@@ -84,3 +86,51 @@ targets:
               NSExtensionActivationSupportsWebURLWithMaxCount: 1
               NSExtensionActivationSupportsWebPageWithMaxCount: 1
               NSExtensionActivationSupportsText: true
+  ChefVaultTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ChefVaultTests
+    dependencies:
+      - target: ChefVault
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.chefvault.app.tests
+        GENERATE_INFOPLIST_FILE: YES
+  ChefVaultUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: ChefVaultUITests
+    dependencies:
+      - target: ChefVault
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.chefvault.app.uitests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  ChefVault:
+    build:
+      targets:
+        ChefVault: all
+    run:
+      config: Debug
+    test:
+      targets:
+        - ChefVaultTests
+  ChefVaultTests:
+    build:
+      targets:
+        ChefVault: all
+        ChefVaultTests: [test]
+    test:
+      targets:
+        - ChefVaultTests
+  ChefVaultUITests:
+    build:
+      targets:
+        ChefVault: all
+        ChefVaultUITests: [test]
+    test:
+      targets:
+        - ChefVaultUITests
