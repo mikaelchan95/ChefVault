@@ -20,6 +20,7 @@ struct VoiceRecipeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var vm: VoiceRecipeViewModel
     @State private var parsedDraft: NewRecipe?
+    @State private var recordingPulse = false
 
     init(sdk: ChefVaultSDK) {
         self.sdk = sdk
@@ -41,6 +42,7 @@ struct VoiceRecipeView: View {
             if state == .ready {
                 parsedDraft = vm.draft?.recipe
             }
+            recordingPulse = state == .recording
         }
     }
 
@@ -88,8 +90,12 @@ struct VoiceRecipeView: View {
                     Circle()
                         .fill(MK.accentSoft)
                         .frame(width: 116, height: 116)
-                        .scaleEffect(reduceMotion ? 1 : 1.08 + min(vm.audioLevel, 0.5))
-                        .opacity(reduceMotion ? 0.45 : 0.55)
+                        .scaleEffect(reduceMotion ? 1 : (recordingPulse ? 1.18 : 1.04) + min(vm.audioLevel, 0.24))
+                        .opacity(reduceMotion ? 0.42 : (recordingPulse ? 0.22 : 0.48))
+                        .animation(
+                            reduceMotion ? .none : .easeInOut(duration: 1.05).repeatForever(autoreverses: true),
+                            value: recordingPulse,
+                        )
                 }
                 Circle()
                     .fill(vm.state == .recording ? MK.accent : MK.surface)
@@ -102,6 +108,7 @@ struct VoiceRecipeView: View {
         }
         .buttonStyle(MKPressStyle())
         .mkAnimated(vm.state)
+        .onAppear { recordingPulse = vm.state == .recording }
         .accessibilityLabel(vm.state == .recording ? "Finish recording" : "Start recording")
     }
 

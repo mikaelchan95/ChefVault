@@ -252,5 +252,6 @@ struct SLProgressBar: View {
             }
         }
         .frame(height: 8)
+        .mkAnimated(fraction)
     }
 }

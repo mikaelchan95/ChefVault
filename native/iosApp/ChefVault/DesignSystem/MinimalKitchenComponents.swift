@@ -304,11 +304,13 @@ struct MKProgressBar: View {
             }
         }
         .frame(height: 8)
+        .mkAnimated(fraction)
     }
 }
 
 struct MKTabBar: View {
     @Binding var selection: SLTab
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: 4) {
@@ -326,7 +328,7 @@ struct MKTabBar: View {
     private func tabButton(_ tab: SLTab) -> some View {
         let isSelected = tab == selection
         return Button {
-            withAnimation(MK.Motion.smooth) { selection = tab }
+            withAnimation(reduceMotion ? nil : MK.Motion.smooth) { selection = tab }
         } label: {
             HStack(spacing: 7) {
                 Image(systemName: tab.icon)

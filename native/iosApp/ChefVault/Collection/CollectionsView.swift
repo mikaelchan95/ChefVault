@@ -39,11 +39,13 @@ struct CollectionsView: View {
                                 NavigationLink(value: collection.id) {
                                     CollectionCard(collection: collection)
                                 }
-                                .buttonStyle(.plain)
+                                .buttonStyle(MKPressStyle())
+                                .transition(.opacity.combined(with: .scale(scale: 0.96)))
                             }
                             Button { showCreate = true } label: { NewCollectionTile() }
-                                .buttonStyle(.plain)
+                                .buttonStyle(MKPressStyle())
                         }
+                        .mkAnimated(filtered.map(\.id))
                         .padding(.horizontal, SL.Pad.screen)
                     }
                     .padding(.bottom, 96)

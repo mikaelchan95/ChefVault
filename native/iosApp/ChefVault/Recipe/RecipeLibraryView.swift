@@ -3,6 +3,7 @@ import ChefVaultShared
 
 struct RecipeLibraryView: View {
     let sdk: ChefVaultSDK
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var vm: RecipeListViewModel
     @State private var query = ""
     @State private var cuisine: String? = nil
@@ -67,9 +68,21 @@ struct RecipeLibraryView: View {
                             SLSearchField(text: $query)
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 8) {
-                                    Button { cuisine = nil } label: { SLChip(label: "All", active: cuisine == nil) }.buttonStyle(.plain)
+                                    Button {
+                                        withAnimation(reduceMotion ? nil : MK.Motion.smooth) { cuisine = nil }
+                                    } label: {
+                                        SLChip(label: "All", active: cuisine == nil)
+                                    }
+                                    .buttonStyle(MKPressStyle())
                                     ForEach(cuisines, id: \.self) { c in
-                                        Button { cuisine = (cuisine == c ? nil : c) } label: { SLChip(label: c, active: cuisine == c) }.buttonStyle(.plain)
+                                        Button {
+                                            withAnimation(reduceMotion ? nil : MK.Motion.smooth) {
+                                                cuisine = (cuisine == c ? nil : c)
+                                            }
+                                        } label: {
+                                            SLChip(label: c, active: cuisine == c)
+                                        }
+                                        .buttonStyle(MKPressStyle())
                                     }
                                 }
                             }
@@ -82,9 +95,11 @@ struct RecipeLibraryView: View {
                             LazyVStack(spacing: 11) {
                                 ForEach(filtered, id: \.id) { recipe in
                                     NavigationLink(value: recipe.id) { SLRecipeRow(recipe: recipe) }
-                                        .buttonStyle(.plain)
+                                        .buttonStyle(MKPressStyle())
+                                        .transition(.opacity.combined(with: .move(edge: .bottom)))
                                 }
                             }
+                            .mkAnimated(filtered.map(\.id))
                             .padding(.horizontal, SL.Pad.screen)
                         }
                     }
@@ -121,8 +136,10 @@ struct RecipeLibraryView: View {
                 .padding(.bottom, 6)
             ForEach(RecipeSort.allCases) { opt in
                 Button {
-                    sortBy = opt
-                    showSort = false
+                    withAnimation(reduceMotion ? nil : MK.Motion.smooth) {
+                        sortBy = opt
+                        showSort = false
+                    }
                 } label: {
                     HStack {
                         Text(opt.label)
