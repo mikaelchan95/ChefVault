@@ -82,12 +82,12 @@ struct CollectionStatusBadge: View {
     }
 }
 
-/// Tone gradients keyed by a stable hash of the collection — four monochrome graphite pairs.
+/// Tone gradients keyed by a stable hash of the collection.
 private let collectionTones: [[Color]] = [
-    [Color(hex: 0x2C2C2E), Color(hex: 0x3A3A3D)],
-    [Color(hex: 0x202022), Color(hex: 0x2D2D30)],
-    [Color(hex: 0x37373A), Color(hex: 0x46464A)],
-    [Color(hex: 0x181819), Color(hex: 0x262629)],
+    [SL.surface2, SL.accentSoft],
+    [SL.surface2, SL.elevated],
+    [SL.accentSoft, SL.surface],
+    [SL.elevated, SL.surface2],
 ]
 
 /// Grid card: gradient hero with a zero-padded mono count, then name + recipe count.
@@ -122,8 +122,8 @@ struct CollectionCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(SL.surface, in: RoundedRectangle(cornerRadius: SL.R.md))
-        .clipShape(RoundedRectangle(cornerRadius: SL.R.md))
-        .overlay(RoundedRectangle(cornerRadius: SL.R.md).strokeBorder(SL.line, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: SL.R.md, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: SL.R.md, style: .continuous).strokeBorder(SL.line, lineWidth: 1))
     }
 }
 
@@ -140,9 +140,9 @@ struct NewCollectionTile: View {
         }
         .frame(maxWidth: .infinity)
         .frame(minHeight: 142)
-        .background(RoundedRectangle(cornerRadius: SL.R.md).fill(Color.clear))
+        .background(RoundedRectangle(cornerRadius: SL.R.md, style: .continuous).fill(Color.clear))
         .overlay(
-            RoundedRectangle(cornerRadius: SL.R.md)
+            RoundedRectangle(cornerRadius: SL.R.md, style: .continuous)
                 .strokeBorder(SL.line2, style: StrokeStyle(lineWidth: 1.5, dash: [5])),
         )
     }

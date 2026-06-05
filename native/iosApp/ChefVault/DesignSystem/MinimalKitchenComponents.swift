@@ -334,17 +334,20 @@ struct MKTabBar: View {
                 if isSelected {
                     Text(tab.label)
                         .font(MK.body(13, .semibold))
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                         .transition(.opacity.combined(with: .scale(scale: 0.8, anchor: .leading)))
                 }
             }
             .foregroundStyle(isSelected ? MK.onAccent : MK.muted)
             .frame(maxWidth: isSelected ? nil : .infinity)
             .frame(height: 42)
-            .padding(.horizontal, isSelected ? 16 : 0)
+            .padding(.horizontal, isSelected ? 12 : 0)
             .background(isSelected ? MK.accent : .clear, in: Capsule())
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+        .layoutPriority(isSelected ? 1 : 0)
         .accessibilityLabel(tab.label)
     }
 }

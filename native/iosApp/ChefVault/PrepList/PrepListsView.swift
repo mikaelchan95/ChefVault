@@ -212,7 +212,7 @@ private struct StationHead: View {
         HStack(spacing: 8) {
             Text(name).font(SL.display(14.5, .bold)).foregroundStyle(SL.text)
             Text(name.uppercased())
-                .font(SL.mono(9.5, .bold)).tracking(0.5)
+                .font(SL.body(11, .semibold))
                 .foregroundStyle(SL.accent)
                 .padding(.horizontal, 6).padding(.vertical, 2)
                 .overlay(Capsule().strokeBorder(SL.accent.opacity(0.5), lineWidth: 1))

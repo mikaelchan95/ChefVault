@@ -18,7 +18,7 @@ struct ChefVaultApp: App {
     var body: some Scene {
         WindowGroup {
             RootView(auth: auth, sdk: sdk, rc: rc)
-                .tint(SL.accent)
+                .tint(MK.accent)
                 .task { await auth.observe() }
         }
     }

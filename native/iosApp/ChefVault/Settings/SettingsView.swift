@@ -59,7 +59,7 @@ struct SettingsView: View {
                             .padding(.top, 4)
                     }
                     .padding(.horizontal, SL.Pad.screen)
-                    .padding(.bottom, 96)
+                    .padding(.bottom, 126)
                 }
             }
             .background(SLBackground())
@@ -101,7 +101,7 @@ struct SettingsView: View {
                 Spacer(minLength: 0)
                 if isPro {
                     Text("ACTIVE")
-                        .font(SL.mono(9.5, .bold)).tracking(0.5)
+                        .font(SL.mono(9.5, .bold))
                         .foregroundStyle(SL.onAccent)
                         .padding(.horizontal, 8).padding(.vertical, 4)
                         .background(SL.accent, in: Capsule())
@@ -115,16 +115,10 @@ struct SettingsView: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            LinearGradient(
-                colors: [SL.accent.opacity(0.22), SL.surface],
-                startPoint: .topLeading, endPoint: .bottomTrailing,
-            ),
-            in: RoundedRectangle(cornerRadius: SL.R.md),
-        )
+        .background(SL.surface, in: RoundedRectangle(cornerRadius: SL.R.md, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: SL.R.md)
-                .strokeBorder(SL.accent.opacity(0.30), lineWidth: 1),
+            RoundedRectangle(cornerRadius: SL.R.md, style: .continuous)
+                .strokeBorder(SL.line, lineWidth: 1),
         )
     }
 
