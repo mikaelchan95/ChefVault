@@ -191,12 +191,11 @@ struct RecipeDetailView: View {
         VStack(alignment: .leading, spacing: 14) {
             Text(recipe.title)
                 .font(SL.display(26, .heavy))
-                .tracking(-0.6)
                 .foregroundStyle(SL.text)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 10) {
                 SLStepper(value: $targetServings, range: 1...100)
-                Text("SERVINGS").font(SL.mono(10.5, .regular)).tracking(1).foregroundStyle(SL.faint)
+                Text("Servings").font(SL.body(12, .semibold)).foregroundStyle(SL.faint)
                 Spacer(minLength: 0)
                 SLSegmented(selection: unitIndex, options: ["Metric", "Imperial"])
                     .frame(width: 150)

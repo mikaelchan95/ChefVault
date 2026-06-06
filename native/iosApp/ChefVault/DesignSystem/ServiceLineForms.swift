@@ -1,13 +1,13 @@
 import SwiftUI
 
-/// Sub-screen nav bar: "‹ <back>" leading + centered title (settings sub-screens, etc.).
+/// Sub-screen nav bar: "‹ <back>" leading + centered title.
 struct SLSubHeader: View {
     let title: String
     var back: String = "Settings"
     var onBack: () -> Void
     var body: some View {
         ZStack {
-            Text(title).font(SL.display(16, .bold)).foregroundStyle(SL.text)
+            Text(title).font(SL.display(16, .semibold)).foregroundStyle(SL.text)
             Button(action: onBack) {
                 HStack(spacing: 2) {
                     Image(systemName: "chevron.left").font(.system(size: 15, weight: .semibold))
@@ -15,7 +15,7 @@ struct SLSubHeader: View {
                 }
                 .foregroundStyle(SL.muted)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(MKPressStyle())
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, 16)
@@ -84,8 +84,9 @@ struct SLField: View {
     }
 }
 
-/// Rounded accent toggle (matches the hi-fi SetRow switch).
+/// Rounded accent toggle.
 struct SLToggle: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var isOn: Bool
     var body: some View {
         Button { isOn.toggle() } label: {
@@ -97,13 +98,12 @@ struct SLToggle: View {
                         .fill(.white)
                         .frame(width: 18, height: 18)
                         .overlay(Circle().strokeBorder(Color.black.opacity(0.12), lineWidth: 0.5))
-                        .shadow(color: .black.opacity(0.22), radius: 1.5, y: 0.5)
                         .padding(2.5),
                     alignment: isOn ? .trailing : .leading,
                 )
-                .animation(.easeInOut(duration: 0.18), value: isOn)
+                .animation(reduceMotion ? .none : MK.Motion.fast, value: isOn)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MKPressStyle())
     }
 }
 

@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - Card
 
-/// Flat surface card with a hairline border + subtle inset highlight.
+/// Flat surface card with a hairline border.
 struct SLCard<Content: View>: View {
     var pad: CGFloat = SL.Pad.card
     var soft = false
@@ -11,8 +11,8 @@ struct SLCard<Content: View>: View {
         content
             .padding(pad)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(soft ? SL.surface2 : SL.surface, in: RoundedRectangle(cornerRadius: SL.R.md))
-            .overlay(RoundedRectangle(cornerRadius: SL.R.md).strokeBorder(SL.line, lineWidth: 1))
+            .background(soft ? SL.surface2 : SL.surface, in: RoundedRectangle(cornerRadius: SL.R.md, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: SL.R.md, style: .continuous).strokeBorder(SL.line, lineWidth: 1))
     }
 }
 
@@ -39,15 +39,13 @@ struct SLButton: View {
                 }
             }
             .frame(maxWidth: full ? .infinity : nil)
-            .padding(.vertical, small ? 8 : 13)
+            .frame(minHeight: small ? 36 : 44)
             .padding(.horizontal, small ? 13 : 18)
             .foregroundStyle(fg)
-            .background(bg)
-            .overlay(RoundedRectangle(cornerRadius: SL.R.sm).strokeBorder(border, lineWidth: 1))
-            .clipShape(RoundedRectangle(cornerRadius: SL.R.sm))
-            .shadow(color: variant == .primary ? SL.accent.opacity(0.35) : .clear, radius: 9, y: 6)
+            .background(bg.clipShape(RoundedRectangle(cornerRadius: SL.R.sm, style: .continuous)))
+            .overlay(RoundedRectangle(cornerRadius: SL.R.sm, style: .continuous).strokeBorder(border, lineWidth: 1))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MKPressStyle())
         .disabled(busy)
     }
 
@@ -61,11 +59,10 @@ struct SLButton: View {
     }
     @ViewBuilder private var bg: some View {
         switch variant {
-        case .primary:
-            LinearGradient(colors: [SL.accentHi, SL.accent], startPoint: .top, endPoint: .bottom)
-        case .secondary: SL.surface2
+        case .primary: SL.accent
+        case .secondary: SL.surface
         case .ghost: Color.clear
-        case .danger: SL.danger.opacity(0.14)
+        case .danger: SL.danger.opacity(0.12)
         }
     }
     private var border: Color {
@@ -90,7 +87,7 @@ struct SLChip: View {
             .padding(.horizontal, small ? 11 : 14)
             .padding(.vertical, small ? 6 : 8)
             .foregroundStyle(active ? SL.onAccent : SL.muted)
-            .background(active ? SL.accent : SL.surface2, in: Capsule())
+            .background(active ? SL.accent : SL.surface, in: Capsule())
             .overlay(Capsule().strokeBorder(active ? SL.accent : SL.line, lineWidth: 1))
     }
 }
@@ -107,14 +104,14 @@ struct SLIconBtn: View {
                 .font(.system(size: 15, weight: .semibold))
                 .frame(width: 38, height: 38)
                 .foregroundStyle(accent ? SL.onAccent : SL.text)
-                .background(accent ? SL.accent : SL.surface, in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(accent ? .clear : SL.line2, lineWidth: 1))
+                .background(accent ? SL.accent : SL.surface, in: RoundedRectangle(cornerRadius: SL.R.sm, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: SL.R.sm, style: .continuous).strokeBorder(accent ? .clear : SL.line2, lineWidth: 1))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MKIconPressStyle())
     }
 }
 
-// MARK: - App bar (large display title with mono kicker + count)
+// MARK: - App bar
 
 struct SLAppBar<Right: View>: View {
     let title: String
@@ -128,7 +125,7 @@ struct SLAppBar<Right: View>: View {
             VStack(alignment: .leading, spacing: 4) {
                 if let kicker { SLKicker(kicker, color: SL.accent, size: 10.5) }
                 HStack(alignment: .firstTextBaseline, spacing: 9) {
-                    Text(title).font(SL.display(30, .heavy)).tracking(-0.6).foregroundStyle(SL.text)
+                    Text(title).font(SL.display(30, .semibold)).foregroundStyle(SL.text)
                     if let count { Text(count).font(SL.mono(13, .bold)).foregroundStyle(SL.muted) }
                 }
                 if let sub { Text(sub).font(SL.body(12.5)).foregroundStyle(SL.muted) }
@@ -164,7 +161,7 @@ struct SLSearchField: View {
         }
         .padding(.horizontal, 14)
         .frame(height: 44)
-        .background(SL.surface2, in: RoundedRectangle(cornerRadius: SL.R.sm))
+        .background(SL.surface, in: RoundedRectangle(cornerRadius: SL.R.sm, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: SL.R.sm).strokeBorder(SL.line, lineWidth: 1))
     }
 }
@@ -177,17 +174,17 @@ struct SLTile: View {
     var size: CGFloat = 56
     var corner: CGFloat = 14
     private static let tones: [[Color]] = [
-        [Color(hex: 0x2C2C2E), Color(hex: 0x3A3A3D)],
-        [Color(hex: 0x202022), Color(hex: 0x2D2D30)],
-        [Color(hex: 0x37373A), Color(hex: 0x46464A)],
-        [Color(hex: 0x181819), Color(hex: 0x262629)],
+        [SL.surface2, SL.accentSoft],
+        [SL.surface2, SL.elevated],
+        [SL.accentSoft, SL.surface],
+        [SL.elevated, SL.surface2],
     ]
     var body: some View {
         LinearGradient(colors: Self.tones[tone % 4], startPoint: .topLeading, endPoint: .bottomTrailing)
             .frame(width: size, height: size)
-            .overlay(Text(letter).font(SL.display(size * 0.4, .bold)).foregroundStyle(.white.opacity(0.52)))
-            .clipShape(RoundedRectangle(cornerRadius: corner))
-            .overlay(RoundedRectangle(cornerRadius: corner).strokeBorder(SL.line2, lineWidth: 1))
+            .overlay(Text(letter).font(SL.display(size * 0.34, .semibold)).foregroundStyle(SL.accent))
+            .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: corner, style: .continuous).strokeBorder(SL.line2, lineWidth: 1))
     }
 }
 
@@ -218,7 +215,8 @@ struct SLStepper: View {
         Button(action: action) {
             Image(systemName: icon).font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(SL.accent).frame(width: 36, height: 38)
-        }.buttonStyle(.plain)
+        }
+        .buttonStyle(MKIconPressStyle())
     }
 }
 
@@ -233,11 +231,11 @@ struct SLSegmented: View {
                     .foregroundStyle(selection == i ? SL.onAccent : SL.muted)
                     .background(selection == i ? SL.accent : .clear, in: RoundedRectangle(cornerRadius: 9))
                     .contentShape(Rectangle())
-                    .onTapGesture { selection = i }
+                    .onTapGesture { withAnimation(MK.Motion.fast) { selection = i } }
             }
         }
         .padding(3)
-        .background(SL.surface, in: RoundedRectangle(cornerRadius: SL.R.sm))
+        .background(SL.surface, in: RoundedRectangle(cornerRadius: SL.R.sm, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: SL.R.sm).strokeBorder(SL.line, lineWidth: 1))
     }
 }
@@ -254,5 +252,6 @@ struct SLProgressBar: View {
             }
         }
         .frame(height: 8)
+        .mkAnimated(fraction)
     }
 }

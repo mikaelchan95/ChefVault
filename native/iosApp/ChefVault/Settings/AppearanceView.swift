@@ -49,7 +49,7 @@ struct AppearanceView: View {
                         Image(systemName: "checkmark.circle.fill").font(.system(size: 12)).foregroundStyle(SL.accent)
                     }
                 }
-                Text(opt.sub).font(SL.mono(8.5)).tracking(0.3).foregroundStyle(SL.faint)
+                Text(opt.sub).font(SL.mono(8.5)).foregroundStyle(SL.faint)
                     .lineLimit(1).minimumScaleFactor(0.7)
             }
             .frame(maxWidth: .infinity)

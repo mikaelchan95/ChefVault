@@ -153,7 +153,7 @@ struct CollectionPreviewCard: View {
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.7))
                 HStack(alignment: .firstTextBaseline) {
-                    Text(name).font(SL.display(18, .heavy)).tracking(-0.4).foregroundStyle(.white).lineLimit(1)
+                    Text(name).font(SL.display(18, .semibold)).foregroundStyle(.white).lineLimit(1)
                     Spacer(minLength: 8)
                     SLCollectionStatusPill(status: status)
                 }

@@ -3,6 +3,7 @@ import ChefVaultShared
 
 struct PrepListsView: View {
     let sdk: ChefVaultSDK
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var vm: PrepListsViewModel
     @State private var selectedListId: String?
     @State private var filter: ItemFilter = .all
@@ -114,15 +115,17 @@ struct PrepListsView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(vm.lists, id: \.id) { list in
-                    Button { selectedListId = list.id } label: {
+                    Button {
+                        withAnimation(reduceMotion ? nil : MK.Motion.smooth) { selectedListId = list.id }
+                    } label: {
                         SLChip(label: list.name, active: list.id == selectedList?.id)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(MKPressStyle())
                 }
                 Button { showCreate = true } label: {
                     SLChip(label: "+", active: false)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(MKPressStyle())
             }
             .padding(.vertical, 2)
         }
@@ -151,10 +154,12 @@ struct PrepListsView: View {
     private var filterRow: some View {
         HStack(spacing: 8) {
             ForEach(ItemFilter.allCases) { option in
-                Button { filter = option } label: {
+                Button {
+                    withAnimation(reduceMotion ? nil : MK.Motion.smooth) { filter = option }
+                } label: {
                     SLChip(label: option.rawValue, active: filter == option)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(MKPressStyle())
             }
         }
     }
@@ -180,6 +185,7 @@ struct PrepListsView: View {
                                 }
                             }
                         }
+                        .mkAnimated(section.items.map { $0.id + "\($0.checked)" })
                     }
                 }
             }
@@ -212,7 +218,7 @@ private struct StationHead: View {
         HStack(spacing: 8) {
             Text(name).font(SL.display(14.5, .bold)).foregroundStyle(SL.text)
             Text(name.uppercased())
-                .font(SL.mono(9.5, .bold)).tracking(0.5)
+                .font(SL.body(11, .semibold))
                 .foregroundStyle(SL.accent)
                 .padding(.horizontal, 6).padding(.vertical, 2)
                 .overlay(Capsule().strokeBorder(SL.accent.opacity(0.5), lineWidth: 1))
@@ -262,6 +268,7 @@ private struct CheckRow: View {
             }
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MKPressStyle())
+        .mkAnimated(item.checked)
     }
 }

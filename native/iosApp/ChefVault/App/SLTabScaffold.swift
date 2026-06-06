@@ -7,8 +7,7 @@ enum SLTab: CaseIterable {
     var icon: String { switch self { case .recipes: "fork.knife"; case .collections: "square.stack"; case .prep: "checklist"; case .settings: "gearshape" } }
 }
 
-/// Service Line tab scaffold — replaces the native TabView. Dark atmosphere behind every
-/// tab, a custom bottom bar with an active-pill + dot, and a floating create FAB.
+/// Root tab scaffold with a compact custom bottom bar.
 struct SLTabScaffold: View {
     let sdk: ChefVaultSDK
     let auth: AuthViewModel
@@ -16,7 +15,6 @@ struct SLTabScaffold: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            // Each tab paints its own SLBackground so the ember glow isn't doubled.
             Group {
                 switch tab {
                 case .recipes: RecipeLibraryView(sdk: sdk)
@@ -25,7 +23,7 @@ struct SLTabScaffold: View {
                 case .settings: SettingsView(sdk: sdk, auth: auth)
                 }
             }
-            SLTabBar(selection: $tab)
+            MKTabBar(selection: $tab)
         }
         .task {
             async let r: () = quiet { try await sdk.recipes.refresh() }
@@ -38,8 +36,7 @@ struct SLTabScaffold: View {
     private func quiet(_ op: () async throws -> Void) async { try? await op() }
 }
 
-/// Floating capsule tab bar — a detached pill hovering above the home indicator. The active
-/// tab is a filled accent chip that expands to show its label; the rest are icon-only.
+/// Legacy tab bar kept for older call sites. New tabs use `MKTabBar`.
 struct SLTabBar: View {
     @Binding var selection: SLTab
     var body: some View {
@@ -50,9 +47,8 @@ struct SLTabBar: View {
         }
         .padding(6)
         .background(.ultraThinMaterial, in: Capsule(style: .continuous))
-        .background(Capsule(style: .continuous).fill(SL.elevated.opacity(0.6)))
+        .background(Capsule(style: .continuous).fill(SL.surface))
         .overlay(Capsule(style: .continuous).strokeBorder(SL.line2, lineWidth: 1))
-        .shadow(color: .black.opacity(0.28), radius: 16, y: 7)
         .padding(.horizontal, SL.Pad.screen)
         .padding(.bottom, 4)
     }
@@ -65,7 +61,7 @@ struct SLTabBar: View {
                 .font(.system(size: 17, weight: .semibold))
             if on {
                 Text(t.label)
-                    .font(SL.body(13.5, .semibold))
+                    .font(SL.body(13, .semibold))
                     .fixedSize()
                     .transition(.opacity.combined(with: .scale(scale: 0.7, anchor: .leading)))
             }
@@ -77,7 +73,7 @@ struct SLTabBar: View {
         .background(Capsule(style: .continuous).fill(on ? SL.accent : .clear))
         .contentShape(Capsule())
         .onTapGesture {
-            withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) { selection = t }
+            withAnimation(MK.Motion.smooth) { selection = t }
         }
     }
 }
@@ -85,18 +81,5 @@ struct SLTabBar: View {
 /// Floating create FAB — drop into a tab's bottom-trailing, above the tab bar.
 struct SLFab: View {
     var action: () -> Void
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: "plus")
-                .font(.system(size: 24, weight: .regular))
-                .frame(width: 54, height: 54)
-                .foregroundStyle(SL.onAccent)
-                .background(SL.accent, in: RoundedRectangle(cornerRadius: 18))
-                .shadow(color: SL.accent.opacity(0.45), radius: 12, y: 10)
-        }
-        .buttonStyle(.plain)
-        .padding(.trailing, SL.Pad.screen)
-        .padding(.bottom, 78)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-    }
+    var body: some View { MKFab(action: action) }
 }
