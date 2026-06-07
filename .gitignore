@@ -6,6 +6,7 @@ out/
 .env
 .env.local
 .env.*.local
+LAUNCH_SECRETS.local.md
 
 # IDE
 .vscode/
@@ -29,3 +30,6 @@ Thumbs.db
 
 # Local feature worktrees
 .worktrees/
+
+# Netlify CLI local state
+.netlify/

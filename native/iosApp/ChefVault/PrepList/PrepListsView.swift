@@ -217,11 +217,6 @@ private struct StationHead: View {
     var body: some View {
         HStack(spacing: 8) {
             Text(name).font(SL.display(14.5, .bold)).foregroundStyle(SL.text)
-            Text(name.uppercased())
-                .font(SL.body(11, .semibold))
-                .foregroundStyle(SL.accent)
-                .padding(.horizontal, 6).padding(.vertical, 2)
-                .overlay(Capsule().strokeBorder(SL.accent.opacity(0.5), lineWidth: 1))
             Spacer(minLength: 8)
             Text("\(doneCount)/\(items.count)")
                 .font(SL.mono(10.5)).foregroundStyle(SL.muted)

@@ -70,10 +70,33 @@ struct RootView: View {
         // Share Extension hand-off: chefvault://import?url=… (immediate) + App Group (cold launch).
         .onOpenURL { handleDeepLink($0) }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { checkPendingImport() }
+            if phase == .active {
+                checkPendingImport()
+                // A webhook may have flipped profiles.plan while we were backgrounded.
+                Task { try? await sdk.profile.refresh() }
+            }
+        }
+        // When a purchase grants the entitlement, the RevenueCat → Supabase webhook
+        // flips profiles.plan server-side asynchronously. Re-read the profile a few
+        // times so the durable gate (which the server cap triggers enforce) catches
+        // up without a cold relaunch.
+        .onChange(of: rc.isPro) { _, nowPro in
+            if nowPro { Task { await reconcileDurableGate() } }
         }
         .sheet(item: $importRequest) { req in
             ImportRecipeView(sdk: sdk, initialUrl: req.url)
+        }
+    }
+
+    /// After an entitlement change, re-read `profiles.plan` a few times so the
+    /// RevenueCat → Supabase webhook (which flips the plan server-side within
+    /// seconds) is reflected by the durable gate without a cold relaunch.
+    private func reconcileDurableGate() async {
+        for delaySeconds in [0, 2, 4, 8] {
+            if delaySeconds > 0 {
+                try? await Task.sleep(nanoseconds: UInt64(delaySeconds) * 1_000_000_000)
+            }
+            try? await sdk.profile.refresh()
         }
     }
 

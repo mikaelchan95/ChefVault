@@ -13,6 +13,7 @@ struct SubscriptionView: View {
     @Environment(\.openURL) private var openURL
 
     @State private var selected: Package?
+    @State private var isRestoring = false
 
     private struct Feature: Identifiable {
         let id = UUID()
@@ -152,11 +153,13 @@ struct SubscriptionView: View {
                 }
                 .disabled(selected == nil)
 
-                Button("Restore Purchases") {
-                    Task { await rc.restore() }
+                Button(isRestoring ? "Restoring…" : "Restore Purchases") {
+                    isRestoring = true
+                    Task { await rc.restore(); isRestoring = false }
                 }
                 .font(SL.body(13))
                 .foregroundStyle(SL.muted)
+                .disabled(isRestoring)
 
                 if let error = rc.lastError {
                     Text(error).font(SL.body(12)).foregroundStyle(SL.danger)
@@ -235,7 +238,9 @@ struct SubscriptionView: View {
     }
 }
 
-// Apple's standard EULA is an acceptable Terms of Use. Replace the privacy URL
-// with ChefVault's real policy before submitting to App Review.
-private let proTermsURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
-private let proPrivacyURL = URL(string: "https://chefvault.app/privacy")!
+// ChefVault's Terms of Use + Privacy Policy, hosted on Netlify
+// (source lives in web/legal/, deployed to chefvault-legal-app.netlify.app).
+// If you later move these to a custom domain (e.g. chefvault.app), update both
+// URLs here and the Privacy Policy URL in App Store Connect.
+private let proTermsURL = URL(string: "https://chefvault-legal-app.netlify.app/terms")!
+private let proPrivacyURL = URL(string: "https://chefvault-legal-app.netlify.app/privacy")!
