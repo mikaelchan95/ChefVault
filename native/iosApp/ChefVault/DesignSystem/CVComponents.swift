@@ -1,12 +1,11 @@
 import SwiftUI
 
-/// Uppercased, wide-tracked section label — a brand signature ported from the RN type scale.
+/// Compact section label.
 struct CVSectionHeader: View {
     let title: String
     var body: some View {
         Text(title.uppercased())
             .font(.caption.weight(.semibold))
-            .tracking(0.8)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
     }

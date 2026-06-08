@@ -8,3 +8,7 @@ verify_jwt = false
 # Authenticated users only (default); the app attaches the signed-in user's JWT.
 [functions.import-recipe]
 verify_jwt = true
+
+# Authenticated users only; the app sends a transcript to create a reviewable draft.
+[functions.parse-recipe-text]
+verify_jwt = true

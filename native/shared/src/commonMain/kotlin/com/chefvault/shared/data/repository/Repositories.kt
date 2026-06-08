@@ -85,6 +85,9 @@ interface RecipeRepository {
     /** Parses a shared URL (TikTok/Instagram/blog) into a draft recipe via the
      *  import-recipe edge function. Returns a draft to review — does NOT save. */
     @Throws(Exception::class) suspend fun importFromUrl(url: String): ImportedRecipe
+    /** Parses spoken or pasted recipe text into a draft recipe via the
+     *  parse-recipe-text edge function. Returns a draft to review — does NOT save. */
+    @Throws(Exception::class) suspend fun createDraftFromText(text: String): ImportedRecipe
     /** Replaces scalar fields and (wholesale) ingredients + steps, mirroring the RN store. */
     @Throws(Exception::class) suspend fun update(id: String, form: NewRecipe)
     @Throws(Exception::class) suspend fun delete(id: String)

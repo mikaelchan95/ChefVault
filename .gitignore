@@ -6,6 +6,7 @@ out/
 .env
 .env.local
 .env.*.local
+LAUNCH_SECRETS.local.md
 
 # IDE
 .vscode/
@@ -26,3 +27,9 @@ Thumbs.db
 
 # Claude Design handoff bundle (re-downloadable)
 .design/
+
+# Local feature worktrees
+.worktrees/
+
+# Netlify CLI local state
+.netlify/

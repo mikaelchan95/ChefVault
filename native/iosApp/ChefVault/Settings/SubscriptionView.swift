@@ -13,6 +13,7 @@ struct SubscriptionView: View {
     @Environment(\.openURL) private var openURL
 
     @State private var selected: Package?
+    @State private var isRestoring = false
 
     private struct Feature: Identifiable {
         let id = UUID()
@@ -64,7 +65,7 @@ struct SubscriptionView: View {
                 Spacer(minLength: 0)
                 if isPro {
                     Text("ACTIVE")
-                        .font(SL.mono(9.5, .bold)).tracking(0.5)
+                        .font(SL.mono(9.5, .bold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 8).padding(.vertical, 4)
                         .background(SL.good, in: Capsule())
@@ -78,16 +79,10 @@ struct SubscriptionView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            LinearGradient(
-                colors: [SL.accent.opacity(0.22), SL.surface],
-                startPoint: .topLeading, endPoint: .bottomTrailing,
-            ),
-            in: RoundedRectangle(cornerRadius: SL.R.md),
-        )
+        .background(SL.surface, in: RoundedRectangle(cornerRadius: SL.R.md, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: SL.R.md)
-                .strokeBorder(SL.accent.opacity(0.30), lineWidth: 1),
+            RoundedRectangle(cornerRadius: SL.R.md, style: .continuous)
+                .strokeBorder(SL.line, lineWidth: 1),
         )
     }
 
@@ -104,7 +99,6 @@ struct SubscriptionView: View {
                         Text("Pro").frame(width: 70, alignment: .center).foregroundStyle(SL.accent)
                     }
                     .font(SL.mono(9.5, .bold))
-                    .tracking(0.5)
                     .foregroundStyle(SL.faint)
                     .padding(.horizontal, 13)
                     .padding(.vertical, 11)
@@ -159,11 +153,13 @@ struct SubscriptionView: View {
                 }
                 .disabled(selected == nil)
 
-                Button("Restore Purchases") {
-                    Task { await rc.restore() }
+                Button(isRestoring ? "Restoring…" : "Restore Purchases") {
+                    isRestoring = true
+                    Task { await rc.restore(); isRestoring = false }
                 }
                 .font(SL.body(13))
                 .foregroundStyle(SL.muted)
+                .disabled(isRestoring)
 
                 if let error = rc.lastError {
                     Text(error).font(SL.body(12)).foregroundStyle(SL.danger)
@@ -190,7 +186,7 @@ struct SubscriptionView: View {
                         Text(periodLabel(package)).font(SL.body(14, .semibold)).foregroundStyle(SL.text)
                         if package.packageType == .annual {
                             Text("BEST VALUE")
-                                .font(SL.mono(8.5, .bold)).tracking(0.5)
+                                .font(SL.mono(8.5, .bold))
                                 .foregroundStyle(SL.onAccent)
                                 .padding(.horizontal, 6).padding(.vertical, 3)
                                 .background(SL.accent, in: Capsule())
@@ -242,7 +238,9 @@ struct SubscriptionView: View {
     }
 }
 
-// Apple's standard EULA is an acceptable Terms of Use. Replace the privacy URL
-// with ChefVault's real policy before submitting to App Review.
-private let proTermsURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
-private let proPrivacyURL = URL(string: "https://chefvault.app/privacy")!
+// ChefVault's Terms of Use + Privacy Policy, hosted on Netlify
+// (source lives in web/legal/, deployed to chefvault-legal-app.netlify.app).
+// If you later move these to a custom domain (e.g. chefvault.app), update both
+// URLs here and the Privacy Policy URL in App Store Connect.
+private let proTermsURL = URL(string: "https://chefvault-legal-app.netlify.app/terms")!
+private let proPrivacyURL = URL(string: "https://chefvault-legal-app.netlify.app/privacy")!

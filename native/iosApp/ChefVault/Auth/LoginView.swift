@@ -10,9 +10,8 @@ struct LoginView: View {
             VStack(alignment: .leading, spacing: 13) {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("ChefVault")
-                        .font(SL.display(40, .heavy))
-                        .tracking(-0.5)
-                        .foregroundStyle(SL.accent)
+                        .font(SL.display(36, .semibold))
+                        .foregroundStyle(SL.text)
                     Text("Your kitchen, organized.")
                         .font(SL.body(13.5))
                         .foregroundStyle(SL.muted)

@@ -51,15 +51,15 @@ final class CollectionDetailViewModel {
     }
 }
 
-/// Tone gradients keyed by a stable hash of the collection — four monochrome graphite pairs.
+/// Tone gradients keyed by a stable hash of the collection.
 private let collectionDetailTones: [[Color]] = [
-    [Color(hex: 0x2C2C2E), Color(hex: 0x3A3A3D)],
-    [Color(hex: 0x202022), Color(hex: 0x2D2D30)],
-    [Color(hex: 0x37373A), Color(hex: 0x46464A)],
-    [Color(hex: 0x181819), Color(hex: 0x262629)],
+    [SL.surface2, SL.accentSoft],
+    [SL.surface2, SL.elevated],
+    [SL.accentSoft, SL.surface],
+    [SL.elevated, SL.surface2],
 ]
 
-/// Service Line status pill — Active uses the ember accent, Draft a neutral surface.
+/// Collection status pill.
 struct SLCollectionStatusPill: View {
     let status: CollectionStatus
 
@@ -68,7 +68,6 @@ struct SLCollectionStatusPill: View {
     var body: some View {
         Text((isActive ? "Active" : "Draft").uppercased())
             .font(SL.mono(9.5, .bold))
-            .tracking(0.8)
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
             .foregroundStyle(isActive ? SL.accent : SL.muted)
@@ -210,10 +209,9 @@ struct CollectionDetailView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Image(systemName: collection.icon ?? "square.stack")
                     .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(SL.accent)
                 Text(collection.name)
                     .font(SL.display(24, .heavy))
-                    .tracking(-0.5)
                     .foregroundStyle(SL.text)
                     .fixedSize(horizontal: false, vertical: true)
                 Text("\(count) recipe\(count == 1 ? "" : "s") · \(statusLabel)")
